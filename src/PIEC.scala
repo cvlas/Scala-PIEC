@@ -1,5 +1,3 @@
-package piec
-
 /**
   * @author Christos G. Vlassopoulos (cvlas@iit.demokritos.gr)
   *
