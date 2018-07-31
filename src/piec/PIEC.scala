@@ -1,5 +1,7 @@
 package piec
 
+import scala.collection.mutable.ListBuffer
+
 /**
   * @author Christos G. Vlassopoulos (cvlas@iit.demokritos.gr)
   *
@@ -11,9 +13,16 @@ object PIEC extends App
 
 	def piec(a: Array[Double], t: Double): Unit = {
 
-		val l = new Array[Double](a.length)
-		val prefix = new Array[Double](a.length)
-		val dp = new Array[Double](a.length)
+        val n = a.length
+		val l = new Array[Double](n)
+		val prefix = new Array[Double](n)
+		val dp = new Array[Double](n)
+
+        var (start, end) = (0, 0)
+        var flag = false
+        var output = new ListBuffer[(Int, Int)]()
+
+        val dprange = Array.ofDim[Double](n, n)
 
 		for (i <- a.indices)
         {
@@ -44,10 +53,34 @@ object PIEC extends App
 			}
 		}
 
+        while (start < n && end < n)
+        {
+            if (start > 0)
+            {
+                dprange(start)(end) = dp(end) - prefix(start-1)
+            }
+            else
+            {
+                dprange(start)(end) = dp(end)
+            }
+
+            if (dprange(start)(end) >= 0)
+            {
+                if ((end == n && start < end) || (end == start && end == n && a(start) >= t))
+                {
+                    //output += (start, end) // ERROR?
+                }
+            }
+        }
+
 		println(a.deep.mkString(", "))
 		println(l.deep.mkString(", "))
 		println(prefix.deep.mkString(", "))
 		println(dp.deep.mkString(", "))
+        println(start)
+        println(end)
+        println(output)
+        println(dprange.deep)
 	}
 
 	val aa = Array(0.0, 0.5, 0.7, 0.9, 0.4, 0.1, 0.0, 0.0, 0.5, 1.0)
