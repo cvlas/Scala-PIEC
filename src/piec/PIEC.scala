@@ -11,36 +11,38 @@ import scala.collection.mutable.ListBuffer
 
 object PIEC extends App
 {
+    // TODO: Is there a more efficient implementation?
     def getCredible(probabilities: Array[Double], intervals: ListBuffer[(Int, Int)]) : ((Int, Int), Double) = {
 
         var intProb = new mutable.HashMap[(Int, Int), Double]()
-        var totalProb = 0.0
+        var credibility = 0.0
 
-        var maxProb = -1.0
+        var maxCred = -1.0
         var maxInt = (-1, -1)
 
-        for ((start, end) <- intervals)
+        for ((start, end) <- intervals)             // For every maximal interval
         {
-            totalProb = 0.0     // reset
+            credibility = 0.0                       // Reset credibility
 
-            for (i <- start to end)
+            for (i <- start to end)                 // For every timepoint of that interval
             {
-                totalProb += probabilities(i)
+                credibility += probabilities(i)     // Calculate credibility as the sum of point probabilities
             }
 
-            intProb += (((start, end), BigDecimal(totalProb).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble))
+            // TODO: Check for possibly better rounding options
+            intProb += (((start, end), BigDecimal(credibility).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble))
         }
 
-        for (((s, e), pr) <- intProb)
+        for (((s, e), cred) <- intProb)             // Find and return the most credible interval, along with its credibility
         {
-            if (pr > maxProb)
+            if (cred > maxCred)
             {
                 maxInt = (s, e)
-                maxProb = pr
+                maxCred = cred
             }
         }
 
-        (maxInt, maxProb)
+        (maxInt, maxCred)
     }
 
     def piec(a: Array[Double], t: Double) : Unit = {
@@ -123,19 +125,6 @@ object PIEC extends App
         }
 
         val result = getCredible(a, output)
-
-		println(a.deep.mkString(", "))
-		println(l.deep.mkString(", "))
-		println(prefix.deep.mkString(", "))
-		println(dp.deep.mkString(", "))
-        println(start)
-        println(end)
-        println(output)
-
-        for (dpr <- dprange)
-        {
-            println(dpr.deep)
-        }
 
         println(s"\n\nThe most credible maximal interval is ${result._1}, with total credibility ${result._2}\n\n")
 	}
