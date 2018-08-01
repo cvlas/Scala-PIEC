@@ -70,8 +70,26 @@ object PIEC extends App
                 {
                     //output += (start, end) // ERROR?
                 }
+				
+				flag = true
+				end += 1
             }
+			else
+			{
+				if (start < end && flag == true)
+				{
+                    //output += (start, end - 1) // ERROR?
+				}
+				if (start == end && a(start) == t)
+				{
+                    //output += (start, end) // ERROR?
+				}
+				flag = false
+				start += 1
+			}
         }
+		
+		// return getCredible(output)
 
 		println(a.deep.mkString(", "))
 		println(l.deep.mkString(", "))
