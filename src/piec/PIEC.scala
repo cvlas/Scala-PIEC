@@ -1,5 +1,6 @@
 package piec
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 /**
@@ -10,8 +11,39 @@ import scala.collection.mutable.ListBuffer
 
 object PIEC extends App
 {
+    def getCredible(probabilities: Array[Double], intervals: ListBuffer[(Int, Int)]) : ((Int, Int), Double) = {
 
-	def piec(a: Array[Double], t: Double): Unit = {
+        var intProb = new mutable.HashMap[(Int, Int), Double]()
+        var totalProb = 0.0
+
+        var maxProb = -1.0
+        var maxInt = (-1, -1)
+
+        for ((start, end) <- intervals)
+        {
+            totalProb = 0.0     // reset
+
+            for (i <- start to end)
+            {
+                totalProb += probabilities(i)
+            }
+
+            intProb += (((start, end), BigDecimal(totalProb).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble))
+        }
+
+        for (((s, e), pr) <- intProb)
+        {
+            if (pr > maxProb)
+            {
+                maxInt = (s, e)
+                maxProb = pr
+            }
+        }
+
+        (maxInt, maxProb)
+    }
+
+    def piec(a: Array[Double], t: Double) : Unit = {
 
         val n = a.length
 		val l = new Array[Double](n)
@@ -36,8 +68,9 @@ object PIEC extends App
 			// TODO: Check for possibly better rounding options
 			prefix(i) = BigDecimal(prefix(i)).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
 		}
-	
-		for (k <- a.indices.reverse)                        // Construct dp array, backwards, based on prefix
+
+        // Construct dp array, backwards, based on prefix
+		for (k <- a.indices.reverse)
         {
 			if (k == a.indices.last)
             {
@@ -57,7 +90,7 @@ object PIEC extends App
         {
             if (start > 0)
             {
-                dprange(start)(end) = dp(end) - prefix(start-1)
+                dprange(start)(end) = BigDecimal(dp(end) - prefix(start-1)).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
             }
             else
             {
@@ -68,7 +101,7 @@ object PIEC extends App
             {
                 if ((end == n && start < end) || (end == start && end == n && a(start) >= t))
                 {
-                    //output += (start, end) // ERROR?
+                    output += ((start, end))
                 }
 				
 				flag = true
@@ -76,20 +109,20 @@ object PIEC extends App
             }
 			else
 			{
-				if (start < end && flag == true)
+				if (start < end && flag)
 				{
-                    //output += (start, end - 1) // ERROR?
+                    output += ((start, end - 1))
 				}
 				if (start == end && a(start) == t)
 				{
-                    //output += (start, end) // ERROR?
-				}
+                    output += ((start, end))
+                }
 				flag = false
 				start += 1
 			}
         }
-		
-		// return getCredible(output)
+
+        val result = getCredible(a, output)
 
 		println(a.deep.mkString(", "))
 		println(l.deep.mkString(", "))
@@ -98,7 +131,13 @@ object PIEC extends App
         println(start)
         println(end)
         println(output)
-        println(dprange.deep)
+
+        for (dpr <- dprange)
+        {
+            println(dpr.deep)
+        }
+
+        println(s"\n\nThe most credible maximal interval is ${result._1}, with total credibility ${result._2}\n\n")
 	}
 
 	val aa = Array(0.0, 0.5, 0.7, 0.9, 0.4, 0.1, 0.0, 0.0, 0.5, 1.0)
