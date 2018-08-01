@@ -88,6 +88,8 @@ object PIEC extends App
 			}
 		}
 
+        var stepCounter = 0
+
         while (start < n && end < n)
         {
             if (start > 0)
@@ -101,9 +103,11 @@ object PIEC extends App
 
             if (dprange(start)(end) >= 0)
             {
-                if ((end == n && start < end) || (end == start && end == n && a(start) >= t))
+                if ((end == n-1 && start < end) || (end == start && end == n-1 && a(start) >= t))
                 {
                     output += ((start, end))
+
+                    println(s"1:Added interval ${(start, end)}, now output is $output\n")
                 }
 				
 				flag = true
@@ -113,11 +117,15 @@ object PIEC extends App
 			{
 				if (start < end && flag)
 				{
-                    output += ((start, end - 1))
+                    output += ((start, end-1))
+
+                    println(s"2:Added interval ${(start, end-1)}, now output is $output\n")
 				}
 				if (start == end && a(start) == t)
 				{
                     output += ((start, end))
+
+                    println(s"3:Added interval ${(start, end)}, now output is $output\n")
                 }
 				flag = false
 				start += 1
@@ -126,7 +134,7 @@ object PIEC extends App
 
         val result = getCredible(a, output)
 
-        println(s"\n\nThe most credible maximal interval is ${result._1}, with total credibility ${result._2}\n\n")
+        println(s"The most credible maximal interval is ${result._1}, with total credibility ${result._2}")
 	}
 
 	val aa = Array(0.0, 0.5, 0.7, 0.9, 0.4, 0.1, 0.0, 0.0, 0.5, 1.0)
