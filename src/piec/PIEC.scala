@@ -22,11 +22,14 @@ object PIEC extends App
 
         for ((start, end) <- intervals)             // For every maximal interval
         {
+            println(s"Working on: ${(start, end)}...")
             credibility = 0.0                       // Reset credibility
+            println(s"Currently, credibility is set to $credibility...")
 
             for (i <- start to end)                 // For every timepoint of that interval
             {
                 credibility += probabilities(i)     // Calculate credibility as the sum of point probabilities
+                println(s"Adding ${probabilities(i)}...")
             }
 
             // TODO: Check for possibly better rounding options
@@ -35,10 +38,13 @@ object PIEC extends App
 
         for (((s, e), cred) <- intProb)             // Find and return the most credible interval, along with its credibility
         {
+            println(s"Fetching: ${((s, e), cred)}...")
             if (cred > maxCred)
             {
+                println(s"cred > maxCred: $cred > $maxCred...")
                 maxInt = (s, e)
                 maxCred = cred
+                println(s"Maximum credibility so far: ${((s, e), cred)}...")
             }
         }
 
@@ -137,6 +143,6 @@ object PIEC extends App
         println(s"The most credible maximal interval is ${result._1}, with total credibility ${result._2}")
 	}
 
-	val aa = Array(0.0, 0.5, 0.7, 0.9, 0.4, 0.1, 0.0, 0.0, 0.5, 1.0)
+	val aa = Array(0.0, 0.3, 0.3, 0.7, 0.7, 0.5, 0.1, 0.0, 0.0, 0.0)
 	piec(aa, 0.5)
 }
