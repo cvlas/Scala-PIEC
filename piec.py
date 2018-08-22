@@ -13,6 +13,7 @@ import sys
 
 def getCredible(tuples,prefixInput):
 
+	print(prefixInput)			# tin peiraksa
 	if not tuples:
 		return(tuples)
 
@@ -22,13 +23,32 @@ def getCredible(tuples,prefixInput):
 	overlap = list()
 	currentValue = tuples[0][1]
 	currentInterval = tuples[0]
-	max_cred = prefixInput[tuples[0][1]] - prefixInput[tuples[0][0]-1]	
+	max_cred = prefixInput[tuples[0][1]] - prefixInput[tuples[0][0]-1]
+	print("Tora imaste sto ")		# tin peiraksa
+	print(tuples[0])			# tin peiraksa
+	print(", me krentimpiliti ")		# tin peiraksa
+	print(max_cred)				# tin peiraksa
+	print(" logo epidi ")			# tin peiraksa
+	print(prefixInput[tuples[0][1]])	# tin peiraksa
+	print(" mion ")				# tin peiraksa
+	print(prefixInput[tuples[0][0]-1])	# tin peiraksa
 
 	for i in range(1, len(tuples)):
+		print(tuples[i])		# tin peiraksa
 		if (tuples[i][0] < currentValue):
-			if ((prefixInput[tuples[i][1]] - prefixInput[tuples[i][0]-1]) >= max_cred):
+			print("Iparxi epikalipsi. Tora tha dume an ")	# tin peiraksa
+			print((prefixInput[tuples[i][1]] - prefixInput[tuples[i][0]-1]))		# tin peiraksa
+			print(" diladi: ")			# tin peiraksa
+			print(prefixInput[tuples[i][1]])	# tin peiraksa
+			print(" mion ")				# tin peiraksa
+			print(prefixInput[tuples[i][0]-1])	# tin peiraksa
+			print(" >= ")		# tin peiraksa
+			print(max_cred)		# tin peiraksa
+			if ((prefixInput[tuples[i][1]] - prefixInput[tuples[i][0]-1]) >= max_cred): 	# tin peiraksa
+				print("Orea. To allaksame.")		# tin peiraksa
 				max_cred = prefixInput[tuples[i][1]] - prefixInput[tuples[i][0]-1]
-				currentInterval = tuples[i]			
+				currentInterval = tuples[i]
+			print("Pamparakato")				# tin peiraksa	
 			currentValue = tuples[i][1]
 								
 		else:
@@ -48,7 +68,7 @@ def PIEC(threshold):
 	(''' PIEC(Probabilistic Interval-based Event calculus) computes probabilistic maximal intervals of a long-term activity(LTA) of interest with respect to an user-defined 	  probability threshold given a list of instantaneous probabilities ''')
 
 	#inputArray list initially contains the instantaneous probabilitites of the LTA.	
-	inputArray = [0.5, 0.3, 0.1, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.4, 0.5, 0.6, 0.7, 0.8 ,0.9, 0.9, 0.9, 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7, 0.0]
+	inputArray = [0.0, 0.3, 0.3, 0.7, 0.7, 0.5, 0.1, 0.0, 0.0, 0.0]
 
 	#prefixInput contains the prefix sums of inputArray list. 
 	prefixInput = [None]*len(inputArray)
