@@ -11,44 +11,67 @@ import scala.collection.mutable.ListBuffer
 
 object PIEC extends App
 {
-    // TODO: Is there a more efficient implementation?
-    def getCredible(probabilities: Array[Double], intervals: ListBuffer[(Int, Int)]) : ((Int, Int), Double) = {
-
-        var intProb = new mutable.HashMap[(Int, Int), Double]()
-        var credibility = 0.0
-
-        var maxCred = -1.0
-        var maxInt = (-1, -1)
-
-        for ((start, end) <- intervals)             // For every maximal interval
+    def getCredible(prefix: Array[Double], intervals: ListBuffer[(Int, Int)]) : ListBuffer[(Int, Int)] =
+    {
+        if (intervals.isEmpty)
         {
-            println(s"Working on: ${(start, end)}...")
-            credibility = 0.0                       // Reset credibility
-            println(s"Currently, credibility is set to $credibility...")
-
-            for (i <- start to end)                 // For every timepoint of that interval
-            {
-                credibility += probabilities(i)     // Calculate credibility as the sum of point probabilities
-                println(s"Adding ${probabilities(i)}...")
-            }
-
-            // TODO: Check for possibly better rounding options
-            intProb += (((start, end), BigDecimal(credibility).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble))
+            intervals
         }
-
-        for (((s, e), cred) <- intProb)             // Find and return the most credible interval, along with its credibility
+        else
         {
-            println(s"Fetching: ${((s, e), cred)}...")
-            if (cred > maxCred)
+            if (intervals.length == 1)
             {
-                println(s"cred > maxCred: $cred > $maxCred...")
-                maxInt = (s, e)
-                maxCred = cred
-                println(s"Maximum credibility so far: ${((s, e), cred)}...")
+                intervals
+            }
+            else
+            {
+                var credible = new ListBuffer[(Int, Int)]()
+
+                var currentInterval = intervals(0)
+                var currentStart = currentInterval._1
+                var currentEnd = currentInterval._2
+                var maxCredibility = 0.0
+
+                // If interval begins at timepoint 0
+                if (currentStart == 0)
+                {
+                    // Credibility should be equal to the prefix at the end
+                    // TODO: Check for possibly better rounding options
+                    maxCredibility = BigDecimal(prefix(currentEnd)).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+                }
+                else
+                {
+                    // Calculate credibility as a difference of prefixes
+                    // TODO: Check for possibly better rounding options
+                    maxCredibility = BigDecimal(prefix(currentEnd) - prefix(currentStart - 1)).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+                }
+
+                for (i <- 1 until intervals.length)
+                {
+                    if (intervals(i)._1 < currentEnd)
+                    {
+                        if ((prefix(intervals(i)._2) - prefix(intervals(i)._1 - 1)) > maxCredibility)
+                        {
+                            maxCredibility = prefix(intervals(i)._2) - prefix(intervals(i)._1 - 1)
+                            currentInterval = intervals(i)
+                        }
+
+                        currentEnd = intervals(i)._2
+                    }
+                    else
+                    {
+                        credible += currentInterval
+                        currentInterval = intervals(i)
+                        currentEnd = intervals(i)._2
+                        maxCredibility = prefix(intervals(i)._2) - prefix(intervals(i)._1 - 1)
+                    }
+                }
+
+                credible += currentInterval
+
+                credible
             }
         }
-
-        (maxInt, maxCred)
     }
 
     def piec(a: Array[Double], t: Double) : Unit = {
@@ -94,7 +117,7 @@ object PIEC extends App
 			}
 		}
 
-        var stepCounter = 0
+        //var stepCounter = 0
 
         while (start < n && end < n)
         {
@@ -138,9 +161,9 @@ object PIEC extends App
 			}
         }
 
-        val result = getCredible(a, output)
+        val result = getCredible(prefix, output)
 
-        println(s"The most credible maximal interval is ${result._1}, with total credibility ${result._2}")
+        println(s"The most credible maximal intervals are ${result.mkString("[", ",", "]")}.")
 	}
 
 	val aa = Array(0.0, 0.3, 0.3, 0.7, 0.7, 0.5, 0.1, 0.0, 0.0, 0.0)
