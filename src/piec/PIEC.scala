@@ -1,6 +1,10 @@
-package piec
+package piec2
 
+import java.io.File
+
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.io.Source
 
 /**
   * @author Christos G. Vlassopoulos (cvlas@iit.demokritos.gr)
@@ -73,13 +77,14 @@ object PIEC extends App
         }
     }
 
-    def piec(a: Array[Double], t: Double) : Unit = {
+    def piec(a: Array[Double], t: Double) : Unit =
+    {
 
         val n = a.length
-		val l = new Array[Double](n)
+        val l = new Array[Double](n)
         val prefix = new Array[Double](n)
         val prefixInput = new Array[Double](n)
-		val dp = new Array[Double](n)
+        val dp = new Array[Double](n)
 
         var (start, end) = (0, 0)
         var flag = false
@@ -87,42 +92,42 @@ object PIEC extends App
 
         val dprange = Array.ofDim[Double](n, n)
 
-		for (i <- a.indices)
+        for (i <- a.indices)
         {
-			// Construct l array, based on a
-			// TODO: Check for possibly better rounding options
-			l(i) = BigDecimal(a(i) - t).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+            // Construct l array, based on a
+            // TODO: Check for possibly better rounding options
+            l(i) = BigDecimal(a(i) - t).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
 
             // Construct prefixInput array, based on a
             prefixInput(i) = a(i)
 
             // Construct prefix array, based on l
             prefix(i) = l(i)
-			for (j <- 0 until i)
+            for (j <- 0 until i)
             {
                 prefixInput(i) += a(j)
                 prefix(i) += l(j)
             }
-			// TODO: Check for possibly better rounding options
-			prefix(i) = BigDecimal(prefix(i)).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
-		}
+            // TODO: Check for possibly better rounding options
+            prefix(i) = BigDecimal(prefix(i)).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+        }
 
         // Construct dp array, backwards, based on prefix
-		for (k <- a.indices.reverse)
+        for (k <- a.indices.reverse)
         {
-			if (k == a.indices.last)
+            if (k == a.indices.last)
             {
                 dp(k) = prefix(k)
             }
-			else
+            else
             {
-				if (prefix(k) > dp(k+1))
+                if (prefix(k) > dp(k+1))
                 {
                     dp(k) = prefix(k)
                 }
-				else dp(k) = dp(k+1)
-			}
-		}
+                else dp(k) = dp(k+1)
+            }
+        }
 
         //var stepCounter = 0
 
@@ -145,76 +150,153 @@ object PIEC extends App
 
                     //println(s"1:Added interval ${(start, end)}, now output is $output\n")
                 }
-				
-				flag = true
-				end += 1
+
+                flag = true
+                end += 1
             }
-			else
-			{
-				if (start < end && flag)
-				{
+            else
+            {
+                if (start < end && flag)
+                {
                     output += ((start, end-1))
 
                     //println(s"2:Added interval ${(start, end-1)}, now output is $output\n")
-				}
-				if (start == end && a(start) == t)
-				{
+                }
+                if (start == end && a(start) == t)
+                {
                     output += ((start, end))
 
                     //println(s"3:Added interval ${(start, end)}, now output is $output\n")
                 }
-				flag = false
-				start += 1
-			}
+                flag = false
+                start += 1
+            }
         }
 
         val result = getCredible(prefixInput, output)
 
-        println(s"The most credible maximal intervals are ${result.mkString("[", ",", "]")}.")
-	}
+        println(s"Most credible maximal interval(s): ${result.mkString("[", ",", "]")}.")
+    }
 
-    val aa01 = Array(0.8, 0.0, 0.8, 0.0, 0.8, 0.0, 0.8, 0.0, 0.8, 0.0)
-    val aa02 = Array(0.0, 0.9, 0.0, 0.9, 0.0, 0.9, 0.0, 0.9, 0.0, 0.9)
-    val aa03 = Array(0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0)
-    val aa04 = Array(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
-    val aa05 = Array(1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1)
-    val aa06 = Array(1.0, 0.8, 0.6, 0.4, 0.2, 0.2, 0.4, 0.6, 0.8, 1.0)
-    val aa07 = Array(0.0, 0.3, 0.6, 0.9, 1.0, 0.0, 0.9, 0.6, 0.3, 0.0)
-    val aa08 = Array(1.0, 0.7, 0.4, 0.1, 0.0, 1.0, 0.1, 0.4, 0.7, 1.0)
-    val aa09 = Array(0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-    val aa10 = Array(0.4, 0.4, 0.4, 0.4, 0.9, 0.4, 0.4, 0.4, 0.4, 0.4)
-    val aa11 = Array(0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9)
-    val aa12 = Array(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
-    val aa13 = Array(1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-    val aa14 = Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.4, 0.9)
-    val aa15 = Array(0.9, 0.4, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-    val aa16 = Array(0.3, 0.6, 0.7, 0.7, 0.2, 0.4, 0.0, 0.1, 0.4, 0.9)
-    val aa17 = Array(0.0, 0.3, 0.3, 0.7, 0.7, 0.5, 0.1, 0.0, 0.0, 0.0)
-    val aa18 = Array(0.5, 0.3, 0.1, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.4, 0.5, 0.6, 0.7, 0.8 ,0.9, 0.9, 0.9, 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7, 0.0)
-    val aa19 = Array(0.5, 0.3, 0.1, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.4, 0.5, 0.6, 0.7, 0.8 ,0.9, 0.9, 0.9, 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7)
-    val aa20 = Array(0, 0.5, 0.7, 0.9, 0.4, 0.1, 0, 0, 0.5, 1)
-    val aa21 = Array(0, 0.5, 0.5, 0.9, 0.4, 0.1, 0, 0, 0.5, 1)
-    val aa22 = Array(0, 0.5, 0, 0.9, 0.4, 0.1, 0, 0, 0.5, 1)
-    piec(aa01, 0.5)
-    piec(aa02, 0.5)
-    piec(aa03, 0.5)
-    piec(aa04, 0.5)
-    piec(aa05, 0.5)
-    piec(aa06, 0.5)
-    piec(aa07, 0.5)
-    piec(aa08, 0.5)
-    piec(aa09, 0.5)
-    piec(aa10, 0.5)
-    piec(aa11, 0.5)
-    piec(aa12, 0.5)
-    piec(aa13, 0.5)
-    piec(aa14, 0.5)
-    piec(aa15, 0.5)
-    piec(aa16, 0.5)
-    piec(aa17, 0.5)
-    piec(aa18, 0.5)
-    piec(aa19, 0.5)
-    piec(aa20, 0.5)
-    piec(aa21, 0.5)
-    piec(aa22, 0.5)
+    def findAllProbECResultFiles(parentDir: File): List[File] =
+    {
+        var auxQueue = new mutable.Queue[File]()
+        var resultsList = new ListBuffer[File]()
+
+        if (parentDir.isDirectory)
+        {
+            auxQueue ++= parentDir.listFiles()
+
+            while (auxQueue.nonEmpty)
+            {
+                var currentFile = auxQueue.dequeue()
+
+                if (currentFile.isDirectory)
+                {
+                    auxQueue ++= currentFile.listFiles()
+                }
+                else
+                {
+                    if (currentFile.getName.startsWith("Prob-EC") && currentFile.getName.endsWith(".result"))
+                    {
+                        resultsList += currentFile
+                    }
+                }
+            }
+        }
+
+        resultsList.toList
+    }
+
+    val parentDir = new File("C:\\Users\\Christos\\Demokritos\\TPLP-Data.v2012.11.10\\experiments\\clean_data\\orig_all\\01-Walk1")
+    val probECResultFiles = findAllProbECResultFiles(parentDir)
+
+    for (f <- probECResultFiles)
+    {
+        var path_of_f = f.getAbsolutePath
+        var lines_of_f = Source.fromFile(f).getLines().filter(_.nonEmpty).filter(!_.startsWith("%")).mkString("\n")
+        var map_of_f = new mutable.HashMap[String, ListBuffer[(Double, Int)]]()
+        var tuples = new ListBuffer[(Double, Int)]()
+
+        val pattern = "([0-9.]+)::holdsAt([(])([a-zA-Z]+)([(])([a-zA-z0-9, ]+)([)=]+)([a-zA-Z0-9]+), ([0-9]+)".r
+
+        for (p <- pattern.findAllMatchIn(lines_of_f).toList)
+        {
+            var hle = s"${p.group(3)}${p.group(4)}${p.group(5)}${p.group(6)}${p.group(7)}"
+            var pt = (p.group(1).toDouble, p.group(8).toInt)
+
+            if (!map_of_f.contains(hle))
+            {
+                tuples = new ListBuffer[(Double, Int)]()
+                tuples += pt
+                map_of_f += ((hle, tuples))
+            }
+            else
+            {
+                tuples = map_of_f(hle)
+
+                if (!tuples.contains(pt))
+                {
+                    tuples += pt
+                    map_of_f += ((hle, tuples))
+                }
+            }
+        }
+
+        for (hle <- map_of_f.keys)
+        {
+            var start = map_of_f(hle).head._2
+            var end = map_of_f(hle).last._2
+
+            if (map_of_f(hle).length != (end - start + 1))
+            {
+                println(s"There are discontiguities for HLE $hle...")
+
+                var discontiguities = new ListBuffer[(Int, Int)]()
+                var prev = 0
+                var curr = 0
+
+                for ((p, t) <- map_of_f(hle))
+                {
+                    curr = t
+
+                    if ((curr > (prev + 1)) && prev != 0)
+                    {
+                        discontiguities += ((prev - start + 1, curr - start - 1))
+                    }
+
+                    prev = curr
+                }
+
+                var copy = map_of_f(hle)
+
+                for ((d_start, d_end) <- discontiguities)
+                {
+                    for (i <- d_start to d_end)
+                    {
+                        copy.insert(i, (0.0, i + start))
+                    }
+                }
+
+                map_of_f += ((hle, copy))
+                println("Discontiguities fixed...")
+            }
+        }
+
+        for (hle <- map_of_f.keys)
+        {
+            println(s"We are about to run PIEC on file $path_of_f")
+            println(s"HLE: $hle")
+
+            var probs = (for (tuple <- map_of_f(hle)) yield tuple._1).toArray
+            var timepoints = (for (tuple <- map_of_f(hle)) yield tuple._2).toArray
+
+            println(s"Probs: ${probs.mkString("[", ", ", "]")}")
+            println(s"Timepoints: ${timepoints.mkString("[", ", ", "]")}")
+
+            piec(probs, 0.5)
+
+            println(s"... with an offset of ${timepoints.head}.\n")
+        }
+    }
 }
