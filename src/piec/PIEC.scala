@@ -1,6 +1,6 @@
 package piec2
 
-import java.io.File
+import java.io.{File, PrintWriter}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -77,7 +77,7 @@ object PIEC extends App
         }
     }
 
-    def piec(a: Array[Double], t: Double) : Unit =
+    def piec(a: Array[Double], t: Double) : ListBuffer[(Int, Int)] =
     {
 
         val n = a.length
@@ -175,11 +175,13 @@ object PIEC extends App
 
         val result = getCredible(prefixInput, output)
 
-        println(s"Most credible maximal interval(s): ${result.mkString("[", ",", "]")}.")
+        //println(s"Most credible maximal interval(s): ${result.mkString("[", ",", "]")}.")
+        result
     }
 
     def findAllProbECResultFiles(parentDir: File): List[File] =
     {
+        print("Gathering all necessary .result files... ")
         var auxQueue = new mutable.Queue[File]()
         var resultsList = new ListBuffer[File]()
 
@@ -205,20 +207,35 @@ object PIEC extends App
             }
         }
 
+        println("Done.")
+        Thread.sleep(1000l)
         resultsList.toList
     }
 
-    val parentDir = new File("C:\\Users\\Christos\\Demokritos\\TPLP-Data.v2012.11.10\\experiments\\clean_data\\orig_all\\01-Walk1")
+    val parentDir = new File("C:\\Users\\Christos\\Demokritos\\TPLP-Data.v2012.11.10\\experiments")
     val probECResultFiles = findAllProbECResultFiles(parentDir)
+
+    //val outFile = new File("../out/PIEC.result")
+
+    //if (!outFile.exists())
+    //{
+    //    outFile.createNewFile()
+    //}
+
+    val pw = new PrintWriter("C:\\Users\\Christos\\Demokritos\\TPLP-Data.v2012.11.10\\experiments\\PIEC\\PIEC.result", "UTF-8")
 
     for (f <- probECResultFiles)
     {
         var path_of_f = f.getAbsolutePath
+        pw.write(s"$path_of_f\n")
+
+        println(path_of_f)
+
         var lines_of_f = Source.fromFile(f).getLines().filter(_.nonEmpty).filter(!_.startsWith("%")).mkString("\n")
         var map_of_f = new mutable.HashMap[String, ListBuffer[(Double, Int)]]()
         var tuples = new ListBuffer[(Double, Int)]()
 
-        val pattern = "([0-9.]+)::holdsAt([(])([a-zA-Z]+)([(])([a-zA-z0-9, ]+)([)=]+)([a-zA-Z0-9]+), ([0-9]+)".r
+        val pattern = "([0-9.e-]+)::holdsAt([(])([a-zA-Z]+)([(])([a-zA-z0-9, ]+)([)=]+)([a-zA-Z0-9]+), ([0-9]+)".r
 
         for (p <- pattern.findAllMatchIn(lines_of_f).toList)
         {
@@ -285,18 +302,26 @@ object PIEC extends App
 
         for (hle <- map_of_f.keys)
         {
-            println(s"We are about to run PIEC on file $path_of_f")
-            println(s"HLE: $hle")
-
-            var probs = (for (tuple <- map_of_f(hle)) yield tuple._1).toArray
+            var probabilities = (for (tuple <- map_of_f(hle)) yield tuple._1).toArray
             var timepoints = (for (tuple <- map_of_f(hle)) yield tuple._2).toArray
+            var offset = timepoints.head
 
-            println(s"Probs: ${probs.mkString("[", ", ", "]")}")
-            println(s"Timepoints: ${timepoints.mkString("[", ", ", "]")}")
+            var tmpResult = piec(probabilities, 0.5)
+            var finalResult = new ListBuffer[(Int, Int)]()
 
-            piec(probs, 0.5)
+            for (interval <- tmpResult)
+            {
+                finalResult += ((interval._1 + offset, interval._2 + offset))
+            }
 
-            println(s"... with an offset of ${timepoints.head}.\n")
+            pw.write(s"HLE: $hle\n")
+            pw.write(s"PIEC INPUT (probabilities):  ${probabilities.mkString("[", ", ", "]")}\n")
+            pw.write(s"           (timepoints):     ${timepoints.mkString("[", ", ", "]")}\n")
+            pw.write(s"PIEC OUTPUT:                 ${finalResult.mkString("[", ", ", "]")}\n\n")
         }
+
+        pw.write("\n\n")
     }
+
+    pw.close()
 }
