@@ -3,7 +3,7 @@ package piec
 import java.io.{File, PrintWriter}
 
 import scala.collection.mutable
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.ListBuffer
 import scala.io.Source
 
 /**
@@ -40,13 +40,13 @@ object PIEC extends App
                 {
                     // Credibility should be equal to the prefix at the end
                     // TODO: Check for possibly better rounding options
-                    maxCredibility = BigDecimal(prefix(currentEnd)).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    maxCredibility = BigDecimal(prefix(currentEnd)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
                 }
                 else
                 {
                     // Calculate credibility as a difference of prefixes
                     // TODO: Check for possibly better rounding options
-                    maxCredibility = BigDecimal(prefix(currentEnd) - prefix(currentStart - 1)).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    maxCredibility = BigDecimal(prefix(currentEnd) - prefix(currentStart - 1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
                 }
 
                 for (i <- 1 until intervals.length)
@@ -96,7 +96,7 @@ object PIEC extends App
         {
             // Construct l array, based on a
             // TODO: Check for possibly better rounding options
-            l(i) = BigDecimal(a(i) - t).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+            l(i) = BigDecimal(a(i) - t).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
 
             // Construct prefixInput array, based on a
             prefixInput(i) = a(i)
@@ -109,7 +109,7 @@ object PIEC extends App
                 prefix(i) += l(j)
             }
             // TODO: Check for possibly better rounding options
-            prefix(i) = BigDecimal(prefix(i)).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+            prefix(i) = BigDecimal(prefix(i)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
         }
 
         // Construct dp array, backwards, based on prefix
@@ -133,7 +133,7 @@ object PIEC extends App
         {
             if (start > 0)
             {
-                dprange(start)(end) = BigDecimal(dp(end) - prefix(start-1)).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+                dprange(start)(end) = BigDecimal(dp(end) - prefix(start-1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
             }
             else
             {
@@ -155,10 +155,14 @@ object PIEC extends App
                 if (start < end && flag)
                 {
                     output += ((start, end-1))
+
+                    //println(s"2:Added interval ${(start, end-1)}, now output is $output\n")
                 }
                 if (start == end && a(start) == t)
                 {
                     output += ((start, end))
+
+                    //println(s"3:Added interval ${(start, end)}, now output is $output\n")
                 }
                 flag = false
                 start += 1
@@ -167,179 +171,83 @@ object PIEC extends App
 
         val result = getCredible(prefixInput, output)
 
+        //println(s"Most credible maximal interval(s): ${result.mkString("[", ",", "]")}.")
         result
     }
 
-    def findAllProbECResultFiles(parentDir: File): List[File] =
+    val dataSetType = Seq[String]("enh", "orig")
+    val gammas = 0.0 to 8.0 by 0.5
+    val noiseAmount = Seq[String]("smooth", "intermediate", "strong")
+    //val noiseType = Seq[String]("clean", "noisy")
+    val runs = 1 to 5
+    val thresholds = 0.3 to 0.7 by 0.2
+    val videoID = 1 to 30
+    val videos = Seq[String]("01-Walk1", "02-Walk2", "03-Walk3",
+        "04-Browse1", "05-Browse2", "06-Browse3",
+        "07-Browse4", "08-Browse_WhileWaiting1", "09-Browse_WhileWaiting2",
+        "10-Rest_InChair", "11-Rest_SlumpOnFloor", "12-Rest_WiggleOnFloor",
+        "13-Rest_FallOnFloor", "14-LeftBag", "15-LeftBag_AtChair",
+        "16-LeftBag_BehindChair", "17-LeftBox", "18-LeftBag_PickedUp",
+        "19-Meet_WalkTogether1", "20-Meet_WalkTogether2", "21-Meet_WalkSplit",
+        "22-Meet_Split3rdGuy", "23-Meet_Crowd", "24-Meet_Split",
+        "25-Fight_RunAway1", "26-Fight_RunAway2", "27-Fight_OneManDown1",
+        "27-Fight_OneManDown2", "27-Fight_OneManDown3", "28-Fight_Chase")
+
+    def findAllProbECResultFiles(): List[File] =
     {
         print("Gathering all necessary .result files... ")
-        var auxQueue = new mutable.Queue[File]()
         var resultsList = new ListBuffer[File]()
 
-        if (parentDir.isDirectory)
+        for (dt <- dataSetType)
         {
-            auxQueue ++= parentDir.listFiles()
+            var dtFull = if (dt == "enh") "enh_all" else "orig_all"
 
-            while (auxQueue.nonEmpty)
+            for (ga <- gammas)
             {
-                var currentFile = auxQueue.dequeue()
-
-                if (currentFile.isDirectory)
+                if (ga == 0.0)
                 {
-                    auxQueue ++= currentFile.listFiles()
+                    for (vd <- videos)
+                    {
+                        resultsList += new File(s"/home/cgvlas/Demokritos/TPLP-toy/experiments/clean_data/${dtFull}/${vd}/Prob-EC.result")
+                    }
                 }
                 else
                 {
-                    if (currentFile.getName.startsWith("Prob-EC") && currentFile.getName.endsWith(".result"))
+                    for (na <- noiseAmount)
                     {
-                        resultsList += currentFile
+                        for (rn <- runs)
+                        {
+                            for (vd <- videos)
+                            {
+                                resultsList += new File(s"/home/cgvlas/Demokritos/TPLP-toy/experiments/noisy_data/${ga}/${dtFull}_run_${rn}/${vd}/Prob-EC_${na}.result")
+                            }
+                        }
                     }
                 }
             }
         }
 
         println("Done.")
-        Thread.sleep(1000l)
         resultsList.toList
     }
 
-    def setUpGroundTruth(dir: File): mutable.HashMap[String, ArrayBuffer[Int]] =
-    {
-        var map = new mutable.HashMap[String, ArrayBuffer[Int]]()
+    val parentDir = new File("/home/cgvlas/Demokritos/TPLP-toy/experiments")
+    val probECResultFiles = findAllProbECResultFiles()
 
-        for (f <- dir.listFiles().filter(_.getName.contains("Grp")).filterNot(_.getName.contains("Appearence")).filterNot(_.getName.contains("Movement")))
-        {
-            print(s"Setting up Groung Truth for $f... ")
-            var lines = Source.fromFile(f).getLines().filter(_.nonEmpty).filter(!_.startsWith("%")).mkString("\n")
-            var timepoints = new ArrayBuffer[Int]()
+    //val outFile = new File("../out/PIEC.result")
 
-            val pattern = "happensAt\\( ([abcefghijlmnotv_]+)\\( grp_ID([0-9]+), \\[ ([a-zA-Z0-9_]+), ([a-zA-Z0-9_]+) \\]\\), ([0-9]+)".r
+    //if (!outFile.exists())
+    //{
+    //    outFile.createNewFile()
+    //}
 
-            for (p <- pattern.findAllMatchIn(lines).toList)
-            {
-                var hle1 = s"${p.group(1)}(${p.group(3)},${p.group(4)})=true"
-                //var hle2 = s"${p.group(1)}(${p.group(4)},${p.group(3)})=true"   // Two alternatives are needed here
-                var tp = p.group(5).toInt / 40
-
-                // First alternative
-                if (!map.contains(hle1))
-                {
-                    timepoints = new ArrayBuffer[Int]()
-                    timepoints += tp
-                    map += ((hle1, timepoints))
-                }
-                else
-                {
-                    timepoints = map(hle1)
-
-                    if (!timepoints.contains(tp))
-                    {
-                        timepoints += tp
-                        map += ((hle1, timepoints))
-                    }
-                }
-
-                // Second alternative
-//                if (!map.contains(hle2))
-//                {
-//                    timepoints = new ArrayBuffer[Int]()
-//                    timepoints += tp
-//                    map += ((hle2, timepoints))
-//                }
-//                else
-//                {
-//                    timepoints = map(hle2)
-//
-//                    if (!timepoints.contains(tp))
-//                    {
-//                        timepoints += tp
-//                        map += ((hle2, timepoints))
-//                    }
-//                }
-            }
-
-            println("Done.")
-        }
-
-        map
-    }
-
-    def expandIntervals(listOfIntervals: ListBuffer[(Int, Int)]): ArrayBuffer[Int] =
-    {
-        var result = new ArrayBuffer[Int]()
-
-        for ((s, t) <- listOfIntervals)
-        {
-            for (i <- s to t)
-            {
-                result += i
-            }
-        }
-
-        result
-    }
-
-    def evaluateResults(p: ArrayBuffer[Int], g: ArrayBuffer[Int]): (Int, Int, Int) =
-    {
-        var (tp, fp, fn) = (0, 0, 0)
-        var (i, j) = (0, 0)
-        var pDone = false
-
-        while ((i < p.length) && (j < g.length))
-        {
-            if (p(i) == g(j))
-            {
-                tp += 1
-                i += 1
-                j += 1
-            }
-            else
-            {
-                if (p(i) < g(j))
-                {
-                    fp += 1
-                    i += 1
-                }
-                else
-                {
-                    fn += 1
-                    j += 1
-                }
-            }
-
-            if (i == p.length) pDone = true
-        }
-
-        if (pDone)
-        {
-            fn += (g.length - j)
-        }
-        else
-        {
-            fp += (p.length - i)
-        }
-
-        (tp, fp, fn)
-    }
-
-    val parentDir = new File("/home/cgvlas/Demokritos/TPLP-Data.v2012.11.10/experiments")
-    val dataSetDir = new File("/home/cgvlas/Demokritos/TPLP-Data.v2012.11.10/dataset")
-    val probECResultFiles = findAllProbECResultFiles(parentDir)
-
-    val pw = new PrintWriter("/home/cgvlas/Demokritos/TPLP-Data.v2012.11.10/experiments/PIEC/PIEC.result", "UTF-8")
+    val pw = new PrintWriter("/home/cgvlas/Demokritos/TPLP-toy/experiments/PIEC/PIEC.result", "UTF-8")
+    val pw2 = new PrintWriter("/home/cgvlas/Demokritos/TPLP-toy/experiments/PIEC/PYEC.input", "UTF-8")
 
     for (f <- probECResultFiles)
     {
         var path_of_f = f.getAbsolutePath
-
-        var pathParts = path_of_f.split("\\Q/\\E")
-        var videoId = pathParts.init.last
-        var enhorig = if (pathParts.init.init.last.split("\\Q_\\E").head == "orig") "original" else "enhanced"
-        var dataDir = new File(s"/home/cgvlas/Demokritos/TPLP-Data.v2012.11.10/dataset/$enhorig/$videoId/")
-
-        var ground_truth_of_f = setUpGroundTruth(dataDir)
-
-        pw.write(s"$path_of_f\n")
+        //pw.write(s"FILE: $path_of_f\n")
 
         println(path_of_f)
 
@@ -347,7 +255,7 @@ object PIEC extends App
         var map_of_f = new mutable.HashMap[String, ListBuffer[(Double, Int)]]()
         var tuples = new ListBuffer[(Double, Int)]()
 
-        val pattern = "([0-9.e-]+)::holdsAt([(])([abcefghijlmnotv_]+)([(])([a-zA-z0-9, ]+)([)=]+)([a-zA-Z0-9]+), ([0-9]+)".r
+        val pattern = "([0-9.e-]+)::holdsAt([(])([a-zA-Z]+)([(])([a-zA-z0-9, ]+)([)=]+)([a-zA-Z0-9]+), ([0-9]+)".r
 
         for (p <- pattern.findAllMatchIn(lines_of_f).toList)
         {
@@ -414,12 +322,6 @@ object PIEC extends App
 
         for (hle <- map_of_f.keys)
         {
-            if (!ground_truth_of_f.contains(hle))
-            {
-                ground_truth_of_f += ((hle, new ArrayBuffer[Int]()))
-                println(s"WARNING: Found a HLE ($hle) that is not present in the Ground Truth...")
-            }
-
             var probabilities = (for (tuple <- map_of_f(hle)) yield tuple._1).toArray
             var timepoints = (for (tuple <- map_of_f(hle)) yield tuple._2).toArray
             var offset = timepoints.head
@@ -432,30 +334,16 @@ object PIEC extends App
                 finalResult += ((interval._1 + offset, interval._2 + offset))
             }
 
-            pw.write(s"HLE: $hle\n")
-            pw.write(s"PIEC INPUT (probabilities):  ${probabilities.mkString("[", ", ", "]")}\n")
-            pw.write(s"           (timepoints):     ${timepoints.mkString("[", ", ", "]")}\n")
-            pw.write(s"PIEC OUTPUT (intervals):     ${finalResult.mkString("[", ", ", "]")}\n")
-
-            var groundTruthPoints = ground_truth_of_f(hle)
-            var finalResultPoints = expandIntervals(finalResult)
-
-            pw.write(s"            (timepoints):    ${finalResultPoints.mkString("[", ", ", "]")}\n")
-            pw.write(s"GROUND TRUTH (timepoints):   ${groundTruthPoints.mkString("[", ", ", "]")}\n")
-
-            var (tp, fp, fn) = evaluateResults(finalResultPoints, groundTruthPoints)
-
-            var precision = if ((tp + fp) == 0) -1.0 else 5/(4 + 3).toDouble
-            var recall = if ((tp + fn) == 0) -1.0 else 9/(2 + 5).toDouble
-            var f1Score = if ((tp + fp + fn) == 0) -1.0 else 2*8/(2*7 + 9 + 3).toDouble
-
-            pw.write(s"PRECISION:                   $precision\n")
-            pw.write(s"RECALL:                      $recall\n")
-            pw.write(s"F1-SCORE:                    $f1Score\n\n")
+            pw.write(s"$path_of_f:$hle:${finalResult.mkString("[", ", ", "]")}\n")
+            pw2.write(s"$path_of_f:$hle:${probabilities.mkString("[", ", ", "]")}:${offset}\n")
+            //pw.write(s"PIEC INPUT (probabilities):  ${probabilities.mkString("[", ", ", "]")}\n")
+            //pw.write(s"           (timepoints):     ${timepoints.mkString("[", ", ", "]")}\n")
+            //pw.write(s"PIEC OUTPUT:                 ${finalResult.mkString("[", ", ", "]")}\n\n")
         }
 
-        pw.write("\n\n")
+        //pw.write("\n\n")
     }
 
     pw.close()
+    pw2.close()
 }
