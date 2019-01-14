@@ -12,7 +12,7 @@ import scala.io.Source
   *         2019-01-07
   */
 
-object PIEC_MLN_test extends App
+object PIEC_LoMRF_test extends App
 {
     def formatGround(x: List[(Int, Int)], n: Int): Array[Int] =
     {
@@ -257,21 +257,19 @@ object PIEC_MLN_test extends App
     val oslaHomePath = s"$mlnHomePath/OSLa_results+figures"
     val dnHomePath = s"$mlnHomePath/DN_results+figures"
 
-    val oslaHome = new File(oslaHomePath)
+    val dnHome = new File(dnHomePath)
 
-    for (ltaHome <- oslaHome.listFiles().filter(_.isDirectory).sortWith(_.getName < _.getName))
+    for (ltaHome <- dnHome.listFiles().filter(_.isDirectory).sortWith(_.getName < _.getName))
     {
         println(s"% ------------------------------------------------------------------------------\n% LONG-TERM ACTIVITY: ${ltaHome.getName}\n% ------------------------------------------------------------------------------\n")
 
         val resultsHomePath = s"${ltaHome.getAbsolutePath}/results"
-        // val annotationHomePath = s"$resultsHomePath\\annotation"
 
         val resultsHome = new File(resultsHomePath)
-        // val annotationHome = new File(annotationHomePath)
 
-        var compPrec = new File(s"${ltaHome.getAbsolutePath}/piec_mln_comparison_precision.csv")
-        var compRec = new File(s"${ltaHome.getAbsolutePath}/piec_mln_comparison_recall.csv")
-        var compF1 = new File(s"${ltaHome.getAbsolutePath}/piec_mln_comparison_f-measure.csv")
+        var compPrec = new File(s"${ltaHome.getAbsolutePath}/piec_lomrf_comparison_precision.csv")
+        var compRec = new File(s"${ltaHome.getAbsolutePath}/piec_lomrf_comparison_recall.csv")
+        var compF1 = new File(s"${ltaHome.getAbsolutePath}/piec_lomrf_comparison_f-measure.csv")
         if (!compPrec.getParentFile.exists()) compPrec.getParentFile.mkdirs()
         if (!compPrec.exists()) compPrec.createNewFile()
         if (!compRec.getParentFile.exists()) compRec.getParentFile.mkdirs()
@@ -283,24 +281,21 @@ object PIEC_MLN_test extends App
         val fw2 = new FileWriter(compRec,true)
         val fw3 = new FileWriter(compF1,true)
 
-        fw1.write(s"Thr\tPIEC-Micro\tMLN-EC-Micro\tPIEC-Macro\tMLN-EC-Macro\n")
-        fw2.write(s"Thr\tPIEC-Micro\tMLN-EC-Micro\tPIEC-Macro\tMLN-EC-Macro\n")
-        fw3.write(s"Thr\tPIEC-Micro\tMLN-EC-Micro\tPIEC-Macro\tMLN-EC-Macro\n")
+        fw1.write(s"Thr\tPIEC-Micro\tLoMRF-Micro\tPIEC-Macro\tLoMRF-Macro\n")
+        fw2.write(s"Thr\tPIEC-Micro\tLoMRF-Micro\tPIEC-Macro\tLoMRF-Macro\n")
+        fw3.write(s"Thr\tPIEC-Micro\tLoMRF-Micro\tPIEC-Macro\tLoMRF-Macro\n")
 
-        for (th <- 0.1 to 1.01 by 0.1)
+        for (th <- 0.1 to 0.91 by 0.1)
         {
             val thround = BigDecimal(th).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
 
-            var (microSumTP_mlnec, microSumFP_mlnec, microSumFN_mlnec, microSumTP_piec, microSumFP_piec, microSumFN_piec) = (0, 0, 0, 0, 0, 0)
-            var (macroPrecSum_mlnec, macroRecSum_mlnec, macroF1Sum_mlnec, macroPrecSum_piec, macroRecSum_piec, macroF1Sum_piec) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-            var (tzoufia_m, tzoufia_p) = (0, 0)
+            var (microSumTP_lomrf, microSumFP_lomrf, microSumFN_lomrf, microSumTP_piec, microSumFP_piec, microSumFN_piec) = (0, 0, 0, 0, 0, 0)
+            var (macroPrecSum_lomrf, macroRecSum_lomrf, macroF1Sum_lomrf, macroPrecSum_piec, macroRecSum_piec, macroF1Sum_piec) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+            var (tzoufia_l, tzoufia_p) = (0, 0)
 
             for (resultFile <- resultsHome.listFiles().filter(x => x.getName.endsWith(".csv")).sortWith(_.getName < _.getName))
             {
                 //println(s"Working on ${resultFile.getName} MLN-EC result file, threshold: $thround...")
-
-                val resultFileNameSplit = resultFile.getName.split("\\.")(0).split("_")
-                val (idA, idB) = (resultFileNameSplit(resultFileNameSplit.length - 1), resultFileNameSplit(resultFileNameSplit.length - 2))
 
                 val lastLine = Source.fromFile(resultFile).getLines().foldLeft(Option.empty[String]) { case (_, line) => Some(line) }
 
@@ -324,44 +319,44 @@ object PIEC_MLN_test extends App
                     groundTruth(time) = annot
                 }
 
-                val results_m = evaluateResults(groundTruth, mlnec_intervals(probabilities, thround))
-                var tzoufio_m = false
+                val results_l = evaluateResults(groundTruth, mlnec_intervals(probabilities, thround))
+                var tzoufio_l = false
                 //println(s"MLN-EC: (${results_m._2}, ${results_m._3}, ${results_m._4})")
 
                 val results_p = evaluateResults(groundTruth, piec(probabilities, thround))
                 var tzoufio_p = false
                 //println(s"PIEC:   (${results_p._2}, ${results_p._3}, ${results_p._4})\n")
 
-                val prec_mlnec = if ((results_m._4 + results_m._2) == 0)
+                val prec_lomrf = if ((results_l._4 + results_l._2) == 0)
                                  {
-                                     tzoufio_m = true
+                                     tzoufio_l = true
                                      0
                                  }
-                                 else BigDecimal(results_m._4 / (results_m._4 + results_m._2).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                val rec_mlnec = if ((results_m._4 + results_m._3) == 0)
+                                 else BigDecimal(results_l._4 / (results_l._4 + results_l._2).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                val rec_lomrf = if ((results_l._4 + results_l._3) == 0)
                                 {
-                                    tzoufio_m = true
+                                    tzoufio_l = true
                                     0
                                 }
-                                else BigDecimal(results_m._4 / (results_m._4 + results_m._3).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                val f1_mlnec = if ((prec_mlnec + rec_mlnec) == 0.0)
+                                else BigDecimal(results_l._4 / (results_l._4 + results_l._3).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                val f1_lomrf = if ((prec_lomrf + rec_lomrf) == 0.0)
                                {
-                                   tzoufio_m = true
+                                   tzoufio_l = true
                                    0
                                }
-                               else BigDecimal((2 * prec_mlnec * rec_mlnec) / (prec_mlnec + rec_mlnec)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                               else BigDecimal((2 * prec_lomrf * rec_lomrf) / (prec_lomrf + rec_lomrf)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
 
-                if (!tzoufio_m)
+                if (!tzoufio_l)
                 {
-                    microSumTP_mlnec = microSumTP_mlnec + results_m._4
-                    microSumFP_mlnec = microSumFP_mlnec + results_m._2
-                    microSumFN_mlnec = microSumFN_mlnec + results_m._3
+                    microSumTP_lomrf = microSumTP_lomrf + results_l._4
+                    microSumFP_lomrf = microSumFP_lomrf + results_l._2
+                    microSumFN_lomrf = microSumFN_lomrf + results_l._3
 
-                    macroPrecSum_mlnec = macroPrecSum_mlnec + prec_mlnec
-                    macroRecSum_mlnec = macroRecSum_mlnec + rec_mlnec
-                    macroF1Sum_mlnec = macroF1Sum_mlnec + f1_mlnec
+                    macroPrecSum_lomrf = macroPrecSum_lomrf + prec_lomrf
+                    macroRecSum_lomrf = macroRecSum_lomrf + rec_lomrf
+                    macroF1Sum_lomrf = macroF1Sum_lomrf + f1_lomrf
                 }
-                else tzoufia_m = tzoufia_m + 1
+                else tzoufia_l = tzoufia_l + 1
 
                 //println(s"precision_${ltaHome.getName}_mln-ec : ${prec_mlnec}")
                 //println(s"recall_${ltaHome.getName}_mln-ec : ${rec_mlnec}")
@@ -403,22 +398,22 @@ object PIEC_MLN_test extends App
                 //println(s"f1-score_${ltaHome.getName}_piec : ${f1_piec}\n\n")
             }
 
-            val macroPrecAvg_mlnec = BigDecimal(macroPrecSum_mlnec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_m).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val macroPrecAvg_lomrf = BigDecimal(macroPrecSum_lomrf/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_l).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
             val macroPrecAvg_piec = BigDecimal(macroPrecSum_piec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_p).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-            val macroRecAvg_mlnec = BigDecimal(macroRecSum_mlnec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_m).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val macroRecAvg_lomrf = BigDecimal(macroRecSum_lomrf/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_l).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
             val macroRecAvg_piec = BigDecimal(macroRecSum_piec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_p).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-            val macroF1Avg_mlnec = BigDecimal(macroF1Sum_mlnec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_m).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val macroF1Avg_lomrf = BigDecimal(macroF1Sum_lomrf/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_l).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
             val macroF1Avg_piec = BigDecimal(macroF1Sum_piec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_p).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
 
-            println(s"MACRO-AVERAGE F1-SCORE FOR MLN-EC + THRESHOLD: ${macroF1Avg_mlnec}")
+            println(s"MACRO-AVERAGE F1-SCORE FOR MLN-EC + THRESHOLD: ${macroF1Avg_lomrf}")
             println(s"MACRO-AVERAGE F1-SCORE FOR MLN-EC + PIEC     : ${macroF1Avg_piec}")
 
-            val microPrec_mlnec = if ((microSumTP_mlnec + microSumFP_mlnec) == 0) 0
-                                  else BigDecimal(microSumTP_mlnec / (microSumTP_mlnec + microSumFP_mlnec).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-            val microRec_mlnec = if ((microSumTP_mlnec + microSumFN_mlnec) == 0) 0
-                                 else BigDecimal(microSumTP_mlnec / (microSumTP_mlnec + microSumFN_mlnec).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-            val microF1_mlnec = if ((microPrec_mlnec + microRec_mlnec) == 0.0) 0
-                                else BigDecimal((2 * microPrec_mlnec * microRec_mlnec) / (microPrec_mlnec + microRec_mlnec)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val microPrec_lomrf = if ((microSumTP_lomrf + microSumFP_lomrf) == 0) 0
+                                  else BigDecimal(microSumTP_lomrf / (microSumTP_lomrf + microSumFP_lomrf).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val microRec_lomrf = if ((microSumTP_lomrf + microSumFN_lomrf) == 0) 0
+                                 else BigDecimal(microSumTP_lomrf / (microSumTP_lomrf + microSumFN_lomrf).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val microF1_lomrf = if ((microPrec_lomrf + microRec_lomrf) == 0.0) 0
+                                else BigDecimal((2 * microPrec_lomrf * microRec_lomrf) / (microPrec_lomrf + microRec_lomrf)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
 
             val microPrec_piec = if ((microSumTP_piec + microSumFP_piec) == 0) 0
                                  else BigDecimal(microSumTP_piec / (microSumTP_piec + microSumFP_piec).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
@@ -427,12 +422,12 @@ object PIEC_MLN_test extends App
             val microF1_piec = if ((microPrec_piec + microRec_piec) == 0.0) 0
                                else BigDecimal((2 * microPrec_piec * microRec_piec) / (microPrec_piec + microRec_piec)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
 
-            println(s"MICRO-AVERAGE F1-SCORE FOR MLN-EC + THRESHOLD: ${microF1_mlnec}")
-            println(s"MICRO-AVERAGE F1-SCORE FOR MLN-EC + PIEC     : ${microF1_piec}")
+            println(s"MICRO-AVERAGE F1-SCORE FOR LoMRF + THRESHOLD: ${microF1_lomrf}")
+            println(s"MICRO-AVERAGE F1-SCORE FOR LoMRF + PIEC     : ${microF1_piec}")
 
-            fw1.write(f"${thround}\t${microPrec_piec}%1.7f\t${microPrec_mlnec}%1.7f\t${macroPrecAvg_piec}%1.7f\t${macroPrecAvg_mlnec}%1.7f\n")
-            fw2.write(f"${thround}\t${microRec_piec}%1.7f\t${microRec_mlnec}%1.7f\t${macroRecAvg_piec}%1.7f\t${macroRecAvg_mlnec}%1.7f\n")
-            fw3.write(f"${thround}\t${microF1_piec}%1.7f\t${microF1_mlnec}%1.7f\t${macroF1Avg_piec}%1.7f\t${macroF1Avg_mlnec}%1.7f\n")
+            fw1.write(f"${thround}\t${microPrec_piec}%1.7f\t${microPrec_lomrf}%1.7f\t${macroPrecAvg_piec}%1.7f\t${macroPrecAvg_lomrf}%1.7f\n")
+            fw2.write(f"${thround}\t${microRec_piec}%1.7f\t${microRec_lomrf}%1.7f\t${macroRecAvg_piec}%1.7f\t${macroRecAvg_lomrf}%1.7f\n")
+            fw3.write(f"${thround}\t${microF1_piec}%1.7f\t${microF1_lomrf}%1.7f\t${macroF1Avg_piec}%1.7f\t${macroF1Avg_lomrf}%1.7f\n")
 
             println("% ------------------------------------------------------------------------------\n")
         }
