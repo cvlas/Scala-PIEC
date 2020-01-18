@@ -32,20 +32,30 @@ object StatsGatherer extends App
                     {
                         var barb1s = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics/PROBEC/none/${hle_long}_none-${dt}-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.${hle_long}-${ms}.data")
                         var barb2s = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics/PROBEC/${na}/${hle_long}_${na}-${dt}-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.${hle_long}-${ms}.data")
-                        var bab1s = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics/PIEC/none/${hle_long}_none-${dt}-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.${hle_long}-${ms}.data")
-                        var bab2s = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics/PIEC/${na}/${hle_long}_${na}-${dt}-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.${hle_long}-${ms}.data")
+                        var bab11s = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics/PIEC1/none/${hle_long}_none-${dt}-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.${hle_long}-${ms}.data")
+                        var bab12s = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics/PIEC1/${na}/${hle_long}_${na}-${dt}-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.${hle_long}-${ms}.data")
+                        var bab21s = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics/PIEC2/none/${hle_long}_none-${dt}-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.${hle_long}-${ms}.data")
+                        var bab22s = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics/PIEC2/${na}/${hle_long}_${na}-${dt}-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.${hle_long}-${ms}.data")
 
-                        if (bab2s.exists() && barb2s.exists())
+                        if (bab12s.exists() && bab22s.exists() && barb2s.exists())
                         {
-                            var labis = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics_new/PIEC/${na.capitalize}/${hle_short}_${na}-${dt}-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.${hle_short}-${ms}.data")
-                            if (!labis.getParentFile.exists()) labis.getParentFile.mkdirs()
-                            if (!labis.exists()) labis.createNewFile()
+                            val la1bis = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics_new/PIEC1/${na.capitalize}/${hle_short}_${na}-${dt}-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.${hle_short}-${ms}.data")
+                            if (!la1bis.getParentFile.exists()) la1bis.getParentFile.mkdirs()
+                            if (!la1bis.exists()) la1bis.createNewFile()
 
-                            val fw1 = new FileWriter(labis,true)
+                            val fw1 = new FileWriter(la1bis,true)
 
-                            fw1.write(s"# grp\tPIEC-Min_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\tPIEC-Max_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\tPIEC-Avg_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\n")
+                            fw1.write(s"# grp\tPIEC1-Min_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\tPIEC1-Max_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\tPIEC1-Avg_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\n")
 
-                            var larbis = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics_new/PROBEC/${na.capitalize}/${hle_short}_${na}-${dt}-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.${hle_short}-${ms}.data")
+                            val la2bis = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics_new/PIEC2/${na.capitalize}/${hle_short}_${na}-${dt}-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.${hle_short}-${ms}.data")
+                            if (!la2bis.getParentFile.exists()) la2bis.getParentFile.mkdirs()
+                            if (!la2bis.exists()) la2bis.createNewFile()
+
+                            val fw2 = new FileWriter(la2bis,true)
+
+                            fw2.write(s"# grp\tPIEC2-Min_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\tPIEC2-Max_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\tPIEC2-Avg_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\n")
+
+                            val larbis = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics_new/PROBEC/${na.capitalize}/${hle_short}_${na}-${dt}-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.${hle_short}-${ms}.data")
                             if (!larbis.getParentFile.exists()) larbis.getParentFile.mkdirs()
                             if (!larbis.exists()) larbis.createNewFile()
 
@@ -57,14 +67,24 @@ object StatsGatherer extends App
                             {
                                 if (ga == 0.0)
                                 {
-                                    val valueStr = Source.fromFile(bab1s).getLines().toList.head.split(":")(2)
+                                    val valueStr1 = Source.fromFile(bab11s).getLines().toList.head.split(":")(2)
 
-                                    if (valueStr != "N/A")
+                                    if (valueStr1 != "N/A")
                                     {
-                                        val value = valueStr.toDouble
+                                        val value = valueStr1.toDouble
                                         val (min, max, avg) = (value, value, value)
 
                                         fw1.write(f"${ga}\t${min}%1.7f\t${max}%1.7f\t${avg}%1.7f\n")
+                                    }
+
+                                    val valueStr2 = Source.fromFile(bab21s).getLines().toList.head.split(":")(2)
+
+                                    if (valueStr2 != "N/A")
+                                    {
+                                        val value = valueStr2.toDouble
+                                        val (min, max, avg) = (value, value, value)
+
+                                        fw2.write(f"${ga}\t${min}%1.7f\t${max}%1.7f\t${avg}%1.7f\n")
                                     }
 
                                     val valueStrr = Source.fromFile(barb1s).getLines().toList.head.split(":")(2)
@@ -80,9 +100,9 @@ object StatsGatherer extends App
                                 }
                                 else
                                 {
-                                    var matchingLines = Source.fromFile(bab2s).getLines().filter(_.startsWith(s"${ga}"))
+                                    var matchingLines1 = Source.fromFile(bab12s).getLines().filter(_.startsWith(s"${ga}"))
 
-                                    if (matchingLines.isEmpty)
+                                    if (matchingLines1.isEmpty)
                                     {
                                         val (min, max, avg) = (0.0, 0.0, 0.0)
 
@@ -93,7 +113,7 @@ object StatsGatherer extends App
                                     {
                                         var (min, max, avg, sum, ctr) = (1.0, 0.0, 0.0, 0.0, 0)
 
-                                        for (line <- matchingLines)
+                                        for (line <- matchingLines1)
                                         {
                                             val lastPart = line.split(":")(2)
                                             if (lastPart != "N/A")
@@ -108,6 +128,37 @@ object StatsGatherer extends App
                                         }
 
                                         fw1.write(f"${ga}\t${min}%1.7f\t${max}%1.7f\t${avg}%1.7f\n")
+                                        //println("JUST WROTE!!!")
+                                    }
+
+                                    var matchingLines2 = Source.fromFile(bab22s).getLines().filter(_.startsWith(s"${ga}"))
+
+                                    if (matchingLines2.isEmpty)
+                                    {
+                                        val (min, max, avg) = (0.0, 0.0, 0.0)
+
+                                        fw2.write(f"${ga}\t${min}%1.7f\t${max}%1.7f\t${avg}%1.7f\n")
+                                        //println("JUST WROTE!!!")
+                                    }
+                                    else
+                                    {
+                                        var (min, max, avg, sum, ctr) = (1.0, 0.0, 0.0, 0.0, 0)
+
+                                        for (line <- matchingLines2)
+                                        {
+                                            val lastPart = line.split(":")(2)
+                                            if (lastPart != "N/A")
+                                            {
+                                                val prob = line.split(":")(2).toDouble
+                                                ctr = ctr + 1
+                                                sum = sum + prob
+                                                avg = sum/ctr
+                                                if (prob < min) min = prob
+                                                if (prob > max) max = prob
+                                            }
+                                        }
+
+                                        fw2.write(f"${ga}\t${min}%1.7f\t${max}%1.7f\t${avg}%1.7f\n")
                                         //println("JUST WROTE!!!")
                                     }
 
@@ -145,6 +196,7 @@ object StatsGatherer extends App
                             }
 
                             fw1.close()
+                            fw2.close()
                             fwr1.close()
                         }
                     }

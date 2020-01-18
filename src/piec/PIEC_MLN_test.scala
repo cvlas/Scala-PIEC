@@ -76,26 +76,28 @@ object PIEC_MLN_test extends App
         tmpArray
     }
 
-    def getCredible(tuples: List[(Int, Int)], prefix: Array[Double]): Array[Int] =
+    def getCredible1(listOfIntervals: List[(Int, Int)], prefix: Array[Double]): Array[Int] =
     {
-        if (tuples.isEmpty)
+        //println(s"GC1: LIST OF INTERVALS: ${listOfIntervals.mkString("[", ", ", "]")}")
+
+        if (listOfIntervals.isEmpty)
         {
             Array.fill[Int](prefix.length)(0)
         }
         else
         {
-            if (tuples.length == 1)
+            if (listOfIntervals.length == 1)
             {
-                formatGround(tuples, prefix.length)
+                formatGround(listOfIntervals, prefix.length)
             }
             else
             {
                 var overlap = new ListBuffer[(Int, Int)]()
 
                 var tmp = 0
-                var currentValue = tuples(0)._2
-                var currentStart = tuples(0)._1
-                var currentInterval = tuples(0)
+                var currentEnd = listOfIntervals(0)._2
+                var currentStart = listOfIntervals(0)._1
+                var currentInterval = listOfIntervals(0)
                 var maxCredibility = 0.0
 
                 // If interval begins at timepoint 0
@@ -103,44 +105,156 @@ object PIEC_MLN_test extends App
                 {
                     // Credibility should be equal to the prefix at the end
                     // TODO: Check for possibly better rounding options
-                    maxCredibility = BigDecimal(prefix(currentValue)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    maxCredibility = BigDecimal(prefix(currentEnd)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    //println(s"GC1: FIRST INTERVAL, STARTING AT 0, ${currentInterval} IS ${(for (i <- currentStart to currentEnd) yield if (i == 0) BigDecimal(prefix(i)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble else BigDecimal(prefix(i) - prefix(i-1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC1: CREDIBILITY IS ${maxCredibility}")
                 }
                 else
                 {
                     // Calculate credibility as a difference of prefixes
                     // TODO: Check for possibly better rounding options
-                    maxCredibility = BigDecimal(prefix(currentValue) - prefix(currentStart - 1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    maxCredibility = BigDecimal(prefix(currentEnd) - prefix(currentStart - 1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    //println(s"GC1: FIRST INTERVAL ${currentInterval} IS ${(for (i <- currentStart to currentEnd) yield BigDecimal(prefix(i) - prefix(i-1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC1: CREDIBILITY IS ${maxCredibility}")
                 }
 
-                for (i <- 1 until tuples.size)
+                for (i <- 1 until listOfIntervals.size)
                 {
-                    if (tuples(i)._1 < currentValue)
+                    //println(s"GC1: NEXT INTERVAL ${listOfIntervals(i)}")
+
+                    if (listOfIntervals(i)._1 < currentEnd)
                     {
-                        if (BigDecimal(prefix(tuples(i)._2) - prefix(tuples(i)._1 - 1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble >= maxCredibility)
+                        //println(s"GC1: THERE IS AN OVERLAP")
+
+                        if (BigDecimal(prefix(listOfIntervals(i)._2) - prefix(listOfIntervals(i)._1 - 1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble >= maxCredibility)
                         {
-                            maxCredibility = BigDecimal(prefix(tuples(i)._2) - prefix(tuples(i)._1 - 1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                            currentInterval = tuples(i)
+                            //println(s"GC1: CREDIBILITY IS GREATER THAN THE MAXIMUM SO FAR")
+                            maxCredibility = BigDecimal(prefix(listOfIntervals(i)._2) - prefix(listOfIntervals(i)._1 - 1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                            //println(s"GC1: INTERVAL ${listOfIntervals(i)} IS ${(for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(prefix(i) - prefix(i-1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC1: CREDIBILITY IS ${maxCredibility}")
+                            currentInterval = listOfIntervals(i)
                         }
 
-                        currentValue = tuples(i)._2
+                        currentEnd = listOfIntervals(i)._2
+                        //println(s"GC1: END OF OVERLAPPING REGION UPDATED: ${currentEnd}")
                     }
                     else
                     {
+                        //println(s"GC1: THERE IS NO OVERLAP")
+
                         overlap += currentInterval
-                        currentInterval = tuples(i)
-                        currentValue = tuples(i)._2
-                        maxCredibility = BigDecimal(prefix(tuples(i)._2) - prefix(tuples(i)._1 - 1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                        //println(s"GC1: MOST CREDIBLE INTERVAL OF THE PREVIOUS OVERLAPPING REGION IS ${currentInterval}, WITH CREDIBILITY ${maxCredibility}")
+
+                        currentInterval = listOfIntervals(i)
+                        //println(s"GC1: STARTING A NEW OVERLAPPING REGION WITH ${currentInterval}")
+
+                        currentEnd = listOfIntervals(i)._2
+                        maxCredibility = BigDecimal(prefix(listOfIntervals(i)._2) - prefix(listOfIntervals(i)._1 - 1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                        //println(s"GC1: INTERVAL ${listOfIntervals(i)} IS ${(for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(prefix(i) - prefix(i-1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC1: CREDIBILITY IS ${maxCredibility}")
                     }
                 }
 
                 overlap += currentInterval
+                //println(s"GC1: MOST CREDIBLE INTERVAL OF THE LAST OVERLAPPING REGION IS ${currentInterval}, WITH CREDIBILITY ${maxCredibility}")
 
                 formatGround(overlap.toList, prefix.length)
             }
         }
     }
 
-    def piec(inputArray: Array[Double], threshold: Double): Array[Int] =
+    def getCredible2(listOfIntervals: List[(Int, Int)], probs: Array[Double], threshold: Double): Array[Int] =
+    {
+        //println(s"GC2: LIST OF INTERVALS: ${listOfIntervals.mkString("[", ", ", "]")}")
+
+        if (listOfIntervals.isEmpty)
+        {
+            Array.fill[Int](probs.length)(0)
+        }
+        else
+        {
+            if (listOfIntervals.length == 1)
+            {
+                formatGround(listOfIntervals, probs.length)
+            }
+            else
+            {
+                var overlap = new ListBuffer[(Int, Int)]()
+
+                var tmp = 0
+                var currentInterval = listOfIntervals(0)
+                var currentEnd = currentInterval._2
+                var currentStart = currentInterval._1
+                var length = currentEnd - currentStart + 1
+                var maxCredibility = 0.0
+
+                // If interval begins at timepoint 0
+                if (currentStart == 0)
+                {
+                    // Credibility should be equal to the prefix at the end
+                    // TODO: Check for possibly better rounding options
+                    val sq_probs = for (i <- currentStart to currentEnd) yield BigDecimal(math.pow(probs(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    val sum_sq_probs = sq_probs.sum
+                    maxCredibility = BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    //println(s"GC2: FIRST INTERVAL, STARTING AT 0, ${listOfIntervals(0)} IS ${(for (i <- currentStart to currentEnd) yield BigDecimal(probs(i)+threshold).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC2: CREDIBILITY IS ${maxCredibility}")
+                }
+                else
+                {
+                    // Calculate credibility as a difference of prefixes
+                    // TODO: Check for possibly better rounding options
+                    val sq_probs = for (i <- currentStart to currentEnd) yield BigDecimal(math.pow(probs(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    val sum_sq_probs = sq_probs.sum
+                    maxCredibility = BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    //println(s"GC2: FIRST INTERVAL ${listOfIntervals(0)} IS ${(for (i <- currentStart to currentEnd) yield BigDecimal(probs(i)+threshold).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC2: CREDIBILITY IS ${maxCredibility}")
+                }
+
+                for (i <- 1 until listOfIntervals.size)
+                {
+                    //println(s"GC2: NEXT INTERVAL ${listOfIntervals(i)}")
+
+                    length = listOfIntervals(i)._2 - listOfIntervals(i)._1 + 1
+
+                    if (listOfIntervals(i)._1 < currentEnd)
+                    {
+                        //println(s"GC2: THERE IS AN OVERLAP")
+
+                        val sq_probs = for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(math.pow(probs(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                        val sum_sq_probs = sq_probs.sum
+
+                        if (BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble >= maxCredibility)
+                        {
+                            //println(s"GC2: CREDIBILITY IS GREATER THAN THE MAXIMUM SO FAR")
+                            maxCredibility = BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                            //println(s"GC2: INTERVAL ${listOfIntervals(i)} IS ${(for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(probs(i)+threshold).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC2: CREDIBILITY IS ${maxCredibility}")
+                            currentInterval = listOfIntervals(i)
+                        }
+
+                        currentEnd = listOfIntervals(i)._2
+                        //println(s"GC2: END OF OVERLAPPING REGION UPDATED: ${currentEnd}")
+                    }
+                    else
+                    {
+                        //println(s"GC2: THERE IS NO OVERLAP")
+
+                        overlap += currentInterval
+                        //println(s"GC2: MOST CREDIBLE INTERVAL OF THE PREVIOUS OVERLAPPING REGION IS ${currentInterval}, WITH CREDIBILITY ${maxCredibility}")
+
+                        currentInterval = listOfIntervals(i)
+                        //println(s"GC2: STARTING A NEW OVERLAPPING REGION WITH ${currentInterval}")
+
+                        currentEnd = listOfIntervals(i)._2
+                        val sq_probs = for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(math.pow(probs(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                        val sum_sq_probs = sq_probs.sum
+                        maxCredibility = BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                        //println(s"GC2: INTERVAL ${listOfIntervals(i)} IS ${(for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(probs(i)+threshold).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC2: CREDIBILITY IS ${maxCredibility}")
+                    }
+                }
+
+                overlap += currentInterval
+                //println(s"GC2: MOST CREDIBLE INTERVAL OF THE LAST OVERLAPPING REGION IS ${currentInterval}, WITH CREDIBILITY ${maxCredibility}")
+
+                formatGround(overlap.toList, probs.length)
+            }
+        }
+    }
+
+    def piec(inputArray: Array[Double], threshold: Double, cred_flag: Boolean) : Array[Int] =
     {
         val prefixInput = new Array[Double](inputArray.length)
         prefixInput(0) = inputArray(0)
@@ -153,10 +267,13 @@ object PIEC_MLN_test extends App
         val prefix = new Array[Double](inputArray.length)
         val dp = new Array[Double](inputArray.length)
         var result = ListBuffer[(Int, Int)]()
+        var i = 0
 
-        for (x <- inputArray)
+        while (i < inputArray.length)
         {
-            inputArray(inputArray.indexOf(x)) = BigDecimal(x - threshold).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val x = inputArray(i)
+            inputArray(i) = BigDecimal(x - threshold).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            i = i + 1
         }
 
         prefix(0) = BigDecimal(inputArray(0)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
@@ -207,7 +324,15 @@ object PIEC_MLN_test extends App
             }
         }
 
-        getCredible(result.toList, prefixInput)
+        val file = new File("full_output.piec")
+        val fw = new FileWriter(file)
+        fw.write(s"${result.mkString("\n")}")
+        fw.close()
+
+        if (!cred_flag)
+            getCredible1(result.toList, prefixInput)
+        else
+            getCredible2(result.toList, inputArray, threshold)
     }
 
     def evaluateResults(g: Array[Int], p: Array[Int]): (Int, Int, Int, Int) =
@@ -253,9 +378,13 @@ object PIEC_MLN_test extends App
         (tn, fp, fn, tp)
     }
 
+    /*val testArr = Array[Double](1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 1.0, 1.0, 1.0, 0.6, 1.0, 0.6, 1.0, 0.6, 0.5, 1.0, 1.0, 0.5, 1.0, 1.0, 1.0, 0.5, 1.0, 0.65, 1.0, 0.6, 0.6, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 1.0, 1.0)
+
+    val resultingArray = mlnec_intervals(testArr, 0.7)
+    println(s"${resultingArray.mkString("[", ", ", "]")}")*/
+
     val mlnHomePath = "/home/cgvlas/Demokritos/PIEC-paper/data MLN-EC/MLN-EC"
     val oslaHomePath = s"$mlnHomePath/OSLa_results+figures"
-    val dnHomePath = s"$mlnHomePath/DN_results+figures"
 
     val oslaHome = new File(oslaHomePath)
 
@@ -283,24 +412,21 @@ object PIEC_MLN_test extends App
         val fw2 = new FileWriter(compRec,true)
         val fw3 = new FileWriter(compF1,true)
 
-        fw1.write(s"Thr\tPIEC-Micro\tMLN-EC-Micro\tPIEC-Macro\tMLN-EC-Macro\n")
-        fw2.write(s"Thr\tPIEC-Micro\tMLN-EC-Micro\tPIEC-Macro\tMLN-EC-Macro\n")
-        fw3.write(s"Thr\tPIEC-Micro\tMLN-EC-Micro\tPIEC-Macro\tMLN-EC-Macro\n")
+        fw1.write(s"Thr\tPIEC1-Micro\tPIEC2-Micro\tMLN-EC-Micro\tPIEC1-Macro\tPIEC2-Macro\tMLN-EC-Macro\n")
+        fw2.write(s"Thr\tPIEC1-Micro\tPIEC2-Micro\tMLN-EC-Micro\tPIEC1-Macro\tPIEC2-Macro\tMLN-EC-Macro\n")
+        fw3.write(s"Thr\tPIEC1-Micro\tPIEC2-Micro\tMLN-EC-Micro\tPIEC1-Macro\tPIEC2-Macro\tMLN-EC-Macro\n")
 
-        for (th <- 0.1 to 1.01 by 0.1)
+        for (th <- 0.1 to 0.91 by 0.1)
         {
             val thround = BigDecimal(th).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
 
-            var (microSumTP_mlnec, microSumFP_mlnec, microSumFN_mlnec, microSumTP_piec, microSumFP_piec, microSumFN_piec) = (0, 0, 0, 0, 0, 0)
-            var (macroPrecSum_mlnec, macroRecSum_mlnec, macroF1Sum_mlnec, macroPrecSum_piec, macroRecSum_piec, macroF1Sum_piec) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-            var (tzoufia_m, tzoufia_p) = (0, 0)
+            var (microSumTP_mlnec, microSumFP_mlnec, microSumFN_mlnec, microSumTP_piec1, microSumFP_piec1, microSumFN_piec1, microSumTP_piec2, microSumFP_piec2, microSumFN_piec2) = (0, 0, 0, 0, 0, 0, 0, 0, 0)
+            var (macroPrecSum_mlnec, macroRecSum_mlnec, macroF1Sum_mlnec, macroPrecSum_piec1, macroRecSum_piec1, macroF1Sum_piec1, macroPrecSum_piec2, macroRecSum_piec2, macroF1Sum_piec2) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+            var (all_negatives_counter_m, all_negatives_counter_p1, all_negatives_counter_p2) = (0, 0, 0)
 
-            for (resultFile <- resultsHome.listFiles().filter(x => x.getName.endsWith(".csv")).sortWith(_.getName < _.getName))
+            for (resultFile <- resultsHome.listFiles().filter(x => x.getName.endsWith(".cv")).sortWith(_.getName < _.getName))
             {
                 //println(s"Working on ${resultFile.getName} MLN-EC result file, threshold: $thround...")
-
-                val resultFileNameSplit = resultFile.getName.split("\\.")(0).split("_")
-                val (idA, idB) = (resultFileNameSplit(resultFileNameSplit.length - 1), resultFileNameSplit(resultFileNameSplit.length - 2))
 
                 val lastLine = Source.fromFile(resultFile).getLines().foldLeft(Option.empty[String]) { case (_, line) => Some(line) }
 
@@ -310,7 +436,7 @@ object PIEC_MLN_test extends App
                     case None => 0
                 }
 
-                val probabilities = Array.fill(lastPoint + 1)(0.0)
+                var probabilities = Array.fill(lastPoint + 1)(0.0)
                 val groundTruth = Array.fill(lastPoint + 1)(0)
 
                 for (line <- Source.fromFile(resultFile).getLines())
@@ -324,94 +450,112 @@ object PIEC_MLN_test extends App
                     groundTruth(time) = annot
                 }
 
-                val results_m = evaluateResults(groundTruth, mlnec_intervals(probabilities, thround))
-                var tzoufio_m = false
-                //println(s"MLN-EC: (${results_m._2}, ${results_m._3}, ${results_m._4})")
+                val mintervals = mlnec_intervals(probabilities, thround)
+                val results_m = evaluateResults(groundTruth, mintervals)
+                var all_negatives_m = false
+                println(s"OSLa: (${results_m._2}, ${results_m._3}, ${results_m._4})")
 
-                val results_p = evaluateResults(groundTruth, piec(probabilities, thround))
-                var tzoufio_p = false
-                //println(s"PIEC:   (${results_p._2}, ${results_p._3}, ${results_p._4})\n")
+                val pintervals1 = piec(probabilities, thround, false)
+                val results_p1 = evaluateResults(groundTruth, pintervals1)
+                var all_negatives_p1 = false
+                println(s"PIEC1:  (${results_p1._2}, ${results_p1._3}, ${results_p1._4})")
 
-                val prec_mlnec = if ((results_m._4 + results_m._2) == 0)
-                                 {
-                                     tzoufio_m = true
-                                     0
-                                 }
-                                 else BigDecimal(results_m._4 / (results_m._4 + results_m._2).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                val rec_mlnec = if ((results_m._4 + results_m._3) == 0)
-                                {
-                                    tzoufio_m = true
-                                    0
-                                }
-                                else BigDecimal(results_m._4 / (results_m._4 + results_m._3).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                val f1_mlnec = if ((prec_mlnec + rec_mlnec) == 0.0)
-                               {
-                                   tzoufio_m = true
-                                   0
-                               }
-                               else BigDecimal((2 * prec_mlnec * rec_mlnec) / (prec_mlnec + rec_mlnec)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                // Restoring probabilities...
+                probabilities = probabilities.map(x => x + thround)
 
-                if (!tzoufio_m)
+                val pintervals2 = piec(probabilities, thround, true)
+                val results_p2 = evaluateResults(groundTruth, pintervals2)
+                var all_negatives_p2 = false
+                println(s"PIEC (AC):  (${results_p2._2}, ${results_p2._3}, ${results_p2._4})\n")
+
+                // Restoring probabilities...
+                probabilities = probabilities.map(x => x + thround)
+
+                var totalOut = new File(s"${resultFile.getAbsolutePath}.out")
+                if (!totalOut.exists()) totalOut.createNewFile()
+
+                val fw = new FileWriter(totalOut,true)
+                fw.write(s"T,P,OSLa,PIEC1,OVR,GT,Th\n")
+
+                for (i <- probabilities.indices)
                 {
-                    microSumTP_mlnec = microSumTP_mlnec + results_m._4
-                    microSumFP_mlnec = microSumFP_mlnec + results_m._2
-                    microSumFN_mlnec = microSumFN_mlnec + results_m._3
-
-                    macroPrecSum_mlnec = macroPrecSum_mlnec + prec_mlnec
-                    macroRecSum_mlnec = macroRecSum_mlnec + rec_mlnec
-                    macroF1Sum_mlnec = macroF1Sum_mlnec + f1_mlnec
+                    fw.write(s"${i},${BigDecimal(probabilities(i)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble}," +
+                        s"${if (mintervals(i) == 0) 0 else BigDecimal(mintervals(i) + 0.05).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble}," +
+                        s"${if (pintervals1(i) == 0) 0 else BigDecimal(pintervals1(i) + 0.1).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble}," +
+                        s"${if (pintervals2(i) == 0) 0 else BigDecimal(pintervals2(i) + 0.15).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble}," +
+                        s"${if (groundTruth(i) == 0) 0 else BigDecimal(groundTruth(i) + 0.2).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble}," +
+                        s"${thround}\n")
                 }
-                else tzoufia_m = tzoufia_m + 1
 
-                //println(s"precision_${ltaHome.getName}_mln-ec : ${prec_mlnec}")
-                //println(s"recall_${ltaHome.getName}_mln-ec : ${rec_mlnec}")
-                //println(s"f1-score_${ltaHome.getName}_mln-ec : ${f1_mlnec}")
+                fw.close()
 
-                val prec_piec = if ((results_p._4 + results_p._2) == 0)
-                                {
-                                    tzoufio_p = true
-                                    0
-                                }
-                                else BigDecimal(results_p._4 / (results_p._4 + results_p._2).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                val rec_piec = if ((results_p._4 + results_p._3) == 0)
-                               {
-                                   tzoufio_p = true
-                                   0
-                               }
-                               else BigDecimal(results_p._4 / (results_p._4 + results_p._3).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                val f1_piec = if ((prec_piec + rec_piec) == 0.0)
-                              {
-                                  tzoufio_p = true
-                                  0
-                              }
-                              else BigDecimal((2 * prec_piec * rec_piec) / (prec_piec + rec_piec)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                microSumTP_mlnec = microSumTP_mlnec + results_m._4
+                microSumFP_mlnec = microSumFP_mlnec + results_m._2
+                microSumFN_mlnec = microSumFN_mlnec + results_m._3
 
-                if (!tzoufio_p)
+                microSumTP_piec1 = microSumTP_piec1 + results_p1._4
+                microSumFP_piec1 = microSumFP_piec1 + results_p1._2
+                microSumFN_piec1 = microSumFN_piec1 + results_p1._3
+
+                microSumTP_piec2 = microSumTP_piec2 + results_p2._4
+                microSumFP_piec2 = microSumFP_piec2 + results_p2._2
+                microSumFN_piec2 = microSumFN_piec2 + results_p2._3
+
+                if (results_m._2 == 0 && results_m._3 == 0 && results_m._4 == 0 &&
+                    results_p1._2 == 0 && results_p1._3 == 0 && results_p1._4 == 0 &&
+                    results_p2._2 == 0 && results_p2._3 == 0 && results_p2._4 == 0)
                 {
-                    microSumTP_piec = microSumTP_piec + results_p._4
-                    microSumFP_piec = microSumFP_piec + results_p._2
-                    microSumFN_piec = microSumFN_piec + results_p._3
-
-                    macroPrecSum_piec = macroPrecSum_piec + prec_piec
-                    macroRecSum_piec = macroRecSum_piec + rec_piec
-                    macroF1Sum_piec = macroF1Sum_piec + f1_piec
+                    all_negatives_counter_m = all_negatives_counter_m + 1
+                    all_negatives_counter_p1 = all_negatives_counter_p1 + 1
+                    all_negatives_counter_p2 = all_negatives_counter_p2 + 1
                 }
-                else tzoufia_p = tzoufia_p + 1
+                else
+                {
+                    val prec_lomrf = if ((results_m._4 + results_m._2) == 0) 0
+                                     else BigDecimal(results_m._4 / (results_m._4 + results_m._2).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    val rec_lomrf = if ((results_m._4 + results_m._3) == 0) 0
+                                    else BigDecimal(results_m._4 / (results_m._4 + results_m._3).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    val f1_lomrf = BigDecimal((2 * results_m._4) / ((2 * results_m._4) + results_m._2 + results_m._3).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
 
-                //println(s"precision_${ltaHome.getName}_piec : ${prec_piec}")
-                //println(s"recall_${ltaHome.getName}_piec : ${rec_piec}")
-                //println(s"f1-score_${ltaHome.getName}_piec : ${f1_piec}\n\n")
+                    val prec_piec1 = if ((results_p1._4 + results_p1._2) == 0) 0
+                                     else BigDecimal(results_p1._4 / (results_p1._4 + results_p1._2).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    val rec_piec1 = if ((results_p1._4 + results_p1._3) == 0) 0
+                                    else BigDecimal(results_p1._4 / (results_p1._4 + results_p1._3).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    val f1_piec1 = BigDecimal((2 * results_p1._4) / ((2 * results_p1._4) + results_p1._2 + results_p1._3).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+
+                    val prec_piec2 = if ((results_p2._4 + results_p2._2) == 0) 0
+                                     else BigDecimal(results_p2._4 / (results_p2._4 + results_p2._2).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    val rec_piec2 = if ((results_p2._4 + results_p2._3) == 0) 0
+                                    else BigDecimal(results_p2._4 / (results_p2._4 + results_p2._3).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    val f1_piec2 = BigDecimal((2 * results_p2._4) / ((2 * results_p2._4) + results_p2._2 + results_p2._3).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+
+                    macroPrecSum_mlnec = macroPrecSum_mlnec + prec_lomrf
+                    macroRecSum_mlnec = macroRecSum_mlnec + rec_lomrf
+                    macroF1Sum_mlnec = macroF1Sum_mlnec + f1_lomrf
+
+                    macroPrecSum_piec1 = macroPrecSum_piec1 + prec_piec1
+                    macroRecSum_piec1 = macroRecSum_piec1 + rec_piec1
+                    macroF1Sum_piec1 = macroF1Sum_piec1 + f1_piec1
+
+                    macroPrecSum_piec2 = macroPrecSum_piec2 + prec_piec2
+                    macroRecSum_piec2 = macroRecSum_piec2 + rec_piec2
+                    macroF1Sum_piec2 = macroF1Sum_piec2 + f1_piec2
+                }
             }
 
-            val macroPrecAvg_mlnec = BigDecimal(macroPrecSum_mlnec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_m).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-            val macroPrecAvg_piec = BigDecimal(macroPrecSum_piec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_p).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-            val macroRecAvg_mlnec = BigDecimal(macroRecSum_mlnec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_m).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-            val macroRecAvg_piec = BigDecimal(macroRecSum_piec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_p).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-            val macroF1Avg_mlnec = BigDecimal(macroF1Sum_mlnec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_m).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-            val macroF1Avg_piec = BigDecimal(macroF1Sum_piec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - tzoufia_p).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val macroPrecAvg_mlnec = BigDecimal(macroPrecSum_mlnec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - all_negatives_counter_m).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val macroPrecAvg_piec1 = BigDecimal(macroPrecSum_piec1/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - all_negatives_counter_p1).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val macroPrecAvg_piec2 = BigDecimal(macroPrecSum_piec2/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - all_negatives_counter_p2).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val macroRecAvg_mlnec = BigDecimal(macroRecSum_mlnec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - all_negatives_counter_m).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val macroRecAvg_piec1 = BigDecimal(macroRecSum_piec1/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - all_negatives_counter_p1).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val macroRecAvg_piec2 = BigDecimal(macroRecSum_piec2/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - all_negatives_counter_p2).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val macroF1Avg_mlnec = BigDecimal(macroF1Sum_mlnec/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - all_negatives_counter_m).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val macroF1Avg_piec1 = BigDecimal(macroF1Sum_piec1/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - all_negatives_counter_p1).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val macroF1Avg_piec2 = BigDecimal(macroF1Sum_piec2/(resultsHome.listFiles().count(x => x.getName.endsWith(".csv")) - all_negatives_counter_p2).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
 
-            println(s"MACRO-AVERAGE F1-SCORE FOR MLN-EC + THRESHOLD: ${macroF1Avg_mlnec}")
-            println(s"MACRO-AVERAGE F1-SCORE FOR MLN-EC + PIEC     : ${macroF1Avg_piec}")
+            println(s"MACRO-AVERAGE F1-SCORE FOR OSLa + THRESHOLD: ${macroF1Avg_mlnec}")
+            println(s"MACRO-AVERAGE F1-SCORE FOR OSLa + PIEC     : ${macroF1Avg_piec1}")
+            println(s"MACRO-AVERAGE F1-SCORE FOR OSLa + PIEC (AC): ${macroF1Avg_piec2}")
 
             val microPrec_mlnec = if ((microSumTP_mlnec + microSumFP_mlnec) == 0) 0
                                   else BigDecimal(microSumTP_mlnec / (microSumTP_mlnec + microSumFP_mlnec).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
@@ -420,19 +564,27 @@ object PIEC_MLN_test extends App
             val microF1_mlnec = if ((microPrec_mlnec + microRec_mlnec) == 0.0) 0
                                 else BigDecimal((2 * microPrec_mlnec * microRec_mlnec) / (microPrec_mlnec + microRec_mlnec)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
 
-            val microPrec_piec = if ((microSumTP_piec + microSumFP_piec) == 0) 0
-                                 else BigDecimal(microSumTP_piec / (microSumTP_piec + microSumFP_piec).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-            val microRec_piec = if ((microSumTP_piec + microSumFN_piec) == 0) 0
-                                else BigDecimal(microSumTP_piec / (microSumTP_piec + microSumFN_piec).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-            val microF1_piec = if ((microPrec_piec + microRec_piec) == 0.0) 0
-                               else BigDecimal((2 * microPrec_piec * microRec_piec) / (microPrec_piec + microRec_piec)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val microPrec_piec1 = if ((microSumTP_piec1 + microSumFP_piec1) == 0) 0
+                                 else BigDecimal(microSumTP_piec1 / (microSumTP_piec1 + microSumFP_piec1).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val microRec_piec1 = if ((microSumTP_piec1 + microSumFN_piec1) == 0) 0
+                                else BigDecimal(microSumTP_piec1 / (microSumTP_piec1 + microSumFN_piec1).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val microF1_piec1 = if ((microPrec_piec1 + microRec_piec1) == 0.0) 0
+                               else BigDecimal((2 * microPrec_piec1 * microRec_piec1) / (microPrec_piec1 + microRec_piec1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
 
-            println(s"MICRO-AVERAGE F1-SCORE FOR MLN-EC + THRESHOLD: ${microF1_mlnec}")
-            println(s"MICRO-AVERAGE F1-SCORE FOR MLN-EC + PIEC     : ${microF1_piec}")
+            val microPrec_piec2 = if ((microSumTP_piec2 + microSumFP_piec2) == 0) 0
+                                 else BigDecimal(microSumTP_piec2 / (microSumTP_piec2 + microSumFP_piec2).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val microRec_piec2 = if ((microSumTP_piec2 + microSumFN_piec2) == 0) 0
+                                else BigDecimal(microSumTP_piec2 / (microSumTP_piec2 + microSumFN_piec2).toDouble).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val microF1_piec2 = if ((microPrec_piec2 + microRec_piec2) == 0.0) 0
+                               else BigDecimal((2 * microPrec_piec2 * microRec_piec2) / (microPrec_piec2 + microRec_piec2)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
 
-            fw1.write(f"${thround}\t${microPrec_piec}%1.7f\t${microPrec_mlnec}%1.7f\t${macroPrecAvg_piec}%1.7f\t${macroPrecAvg_mlnec}%1.7f\n")
-            fw2.write(f"${thround}\t${microRec_piec}%1.7f\t${microRec_mlnec}%1.7f\t${macroRecAvg_piec}%1.7f\t${macroRecAvg_mlnec}%1.7f\n")
-            fw3.write(f"${thround}\t${microF1_piec}%1.7f\t${microF1_mlnec}%1.7f\t${macroF1Avg_piec}%1.7f\t${macroF1Avg_mlnec}%1.7f\n")
+            println(s"MICRO-AVERAGE F1-SCORE FOR OSLa + THRESHOLD: ${microF1_mlnec}")
+            println(s"MICRO-AVERAGE F1-SCORE FOR OSLa + PIEC     : ${microF1_piec1}")
+            println(s"MICRO-AVERAGE F1-SCORE FOR OSLa + PIEC (AC): ${microF1_piec2}")
+
+            fw1.write(f"${thround}\t${microPrec_piec1}%1.7f\t${microPrec_piec2}%1.7f\t${microPrec_mlnec}%1.7f\t${macroPrecAvg_piec1}%1.7f\t${macroPrecAvg_piec2}%1.7f\t${macroPrecAvg_mlnec}%1.7f\n")
+            fw2.write(f"${thround}\t${microRec_piec1}%1.7f\t${microRec_piec2}%1.7f\t${microRec_mlnec}%1.7f\t${macroRecAvg_piec1}%1.7f\t${macroRecAvg_piec2}%1.7f\t${macroRecAvg_mlnec}%1.7f\n")
+            fw3.write(f"${thround}\t${microF1_piec1}%1.7f\t${microF1_piec2}%1.7f\t${microF1_mlnec}%1.7f\t${macroF1Avg_piec1}%1.7f\t${macroF1Avg_piec2}%1.7f\t${macroF1Avg_mlnec}%1.7f\n")
 
             println("% ------------------------------------------------------------------------------\n")
         }

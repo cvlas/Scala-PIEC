@@ -158,7 +158,7 @@ object PIEC extends App
 
                     //println(s"2:Added interval ${(start, end-1)}, now output is $output\n")
                 }
-                if (start == end && a(start) == t)
+                if (start == end && a(start) >= t)
                 {
                     output += ((start, end))
 
@@ -169,13 +169,16 @@ object PIEC extends App
             }
         }
 
+        println(output)
         val result = getCredible(prefixInput, output)
 
         //println(s"Most credible maximal interval(s): ${result.mkString("[", ",", "]")}.")
         result
     }
 
-    val dataSetType = Seq[String]("enh", "orig")
+    println(piec(Array(1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0), 0.5))
+
+    /*val dataSetType = Seq[String]("enh", "orig")
     val gammas = 0.0 to 8.0 by 0.5
     val noiseAmount = Seq[String]("smooth", "intermediate", "strong")
     //val noiseType = Seq[String]("clean", "noisy")
@@ -345,5 +348,5 @@ object PIEC extends App
     }
 
     pw.close()
-    pw2.close()
+    pw2.close()*/
 }
