@@ -1,3 +1,6 @@
 *.class
 *.iml
 *.xml
+*.swp
+./alex-unit-tests.txt
+./tests.txt
