@@ -14,6 +14,15 @@ import scala.io.Source
 
 object PIEC_test extends App
 {
+    /**
+      * Takes as input a list of intervals of the form (start, end) and returns
+      * an array of 0's and 1's. The i-th element of the resulting Array is a 1
+      * if i is contained in at least one interval in the input List,
+      * otherwise is a 0.
+      *
+      * @param x the input intervals List
+      * @return an array of 0's and 1's
+      */
     def formatGround(x: List[(Int, Int)]): Array[Int] =
     {
         var start = Array.fill[Int](25170)(0)
@@ -44,21 +53,22 @@ object PIEC_test extends App
         start
     }
 
+    /**
+      * Takes as input an Array of instantaneous probabilities and applies
+      * a probability threshold on them. The i-th element of the resulting
+      * Array is a 1 if the corresponding instantaneous probability is equal to
+      * or above the threshold, and a 0 otherwise.
+      *
+      * @param z the Array of instantaneous probabilities
+      * @param threshold the probability threshold
+      * @return an Array of 0's and 1's
+      */
     def probec_intervals(z: Array[Double], threshold: Double): Array[Int] =
     {
-        // z.map(x => if (x >= threshold) 1 else 0)
-
-        var allZeros = true
-
         var tmpArray = Array[Int]()
 
         for (x <- z)
         {
-            if (x > 0.0)
-            {
-                allZeros = false
-            }
-
             if (x >= threshold)
             {
                 tmpArray = tmpArray :+ 1
@@ -69,15 +79,20 @@ object PIEC_test extends App
             }
         }
 
-        if (allZeros)
-        {
-            //println(s"NO USE... ALL ZEROS!")
-            //Thread.sleep(5000l)
-        }
-
         tmpArray
     }
 
+    /**
+      * Takes a list of probabilistic maximal intervals and filters out all but
+      * the credible ones.
+      *
+      * Credibility = the sum of the instantaneous probabilities
+      *
+      * @param tuples the complete List of probabilistic maximal intervals
+      * @param prefix Array containing the progressive instantaneous probability sums
+      * @return an Array that contains 1's for timepoints that belong in credible
+      *         probabilistic maximal intervals and 0's everywhere else
+      */
     def getCredible1(tuples: List[(Int, Int)], prefix: Array[Double]) : Array[Int] =
     {
         if (tuples.isEmpty)
@@ -142,6 +157,17 @@ object PIEC_test extends App
         }
     }
 
+    /**
+      * Takes a list of probabilistic maximal intervals and filters out all but
+      * the credible ones.
+      *
+      * Credibility = the average of the instantaneous probabilities
+      *
+      * @param tuples the complete List of probabilistic maximal intervals
+      * @param prefix Array containing the progressive instantaneous probability sums
+      * @return an Array that contains 1's for timepoints that belong in credible
+      *         probabilistic maximal intervals and 0's everywhere else
+      */
     def getCredible2(tuples: List[(Int, Int)], prefix: Array[Double]) : Array[Int] =
     {
         if (tuples.isEmpty)

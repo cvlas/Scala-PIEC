@@ -14,6 +14,16 @@ import scala.io.Source
 
 object PIEC_MLN_test extends App
 {
+    /**
+      * Takes as input a list of intervals of the form (start, end) and returns
+      * an array of 0's and 1's. The i-th element of the resulting Array is a 1
+      * if i is contained in at least one interval in the input List,
+      * otherwise is a 0.
+      *
+      * @param x the input intervals List
+      * @param n the length of the resulting Array
+      * @return an array of 0's and 1's
+      */
     def formatGround(x: List[(Int, Int)], n: Int): Array[Int] =
     {
         val start = Array.fill[Int](n)(0)
@@ -44,19 +54,22 @@ object PIEC_MLN_test extends App
         start
     }
 
+    /**
+      * Takes as input an Array of instantaneous probabilities and applies
+      * a probability threshold on them. The i-th element of the resulting
+      * Array is a 1 if the corresponding instantaneous probability is equal to
+      * or above the threshold, and a 0 otherwise.
+      *
+      * @param z the Array of instantaneous probabilities
+      * @param threshold the probability threshold
+      * @return an Array of 0's and 1's
+      */
     def mlnec_intervals(z: Array[Double], threshold: Double): Array[Int] =
     {
-        var allZeros = true
-
         var tmpArray = Array[Int]()
 
         for (x <- z)
         {
-            if (x > 0.0)
-            {
-                allZeros = false
-            }
-
             if (x >= threshold)
             {
                 tmpArray = tmpArray :+ 1
@@ -67,19 +80,22 @@ object PIEC_MLN_test extends App
             }
         }
 
-        if (allZeros)
-        {
-            //println(s"NO USE... ALL ZEROS!")
-            //Thread.sleep(5000l)
-        }
-
         tmpArray
     }
 
+    /**
+      * Takes a list of probabilistic maximal intervals and filters out all but
+      * the credible ones.
+      *
+      * Credibility = the sum of the instantaneous probabilities
+      *
+      * @param listOfIntervals the complete List of probabilistic maximal intervals
+      * @param prefix Array containing the progressive instantaneous probability sums
+      * @return an Array that contains 1's for timepoints that belong in credible
+      *         probabilistic maximal intervals and 0's everywhere else
+      */
     def getCredible1(listOfIntervals: List[(Int, Int)], prefix: Array[Double]): Array[Int] =
     {
-        //println(s"GC1: LIST OF INTERVALS: ${listOfIntervals.mkString("[", ", ", "]")}")
-
         if (listOfIntervals.isEmpty)
         {
             Array.fill[Int](prefix.length)(0)
@@ -106,63 +122,57 @@ object PIEC_MLN_test extends App
                     // Credibility should be equal to the prefix at the end
                     // TODO: Check for possibly better rounding options
                     maxCredibility = BigDecimal(prefix(currentEnd)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                    //println(s"GC1: FIRST INTERVAL, STARTING AT 0, ${currentInterval} IS ${(for (i <- currentStart to currentEnd) yield if (i == 0) BigDecimal(prefix(i)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble else BigDecimal(prefix(i) - prefix(i-1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC1: CREDIBILITY IS ${maxCredibility}")
                 }
                 else
                 {
                     // Calculate credibility as a difference of prefixes
                     // TODO: Check for possibly better rounding options
                     maxCredibility = BigDecimal(prefix(currentEnd) - prefix(currentStart - 1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                    //println(s"GC1: FIRST INTERVAL ${currentInterval} IS ${(for (i <- currentStart to currentEnd) yield BigDecimal(prefix(i) - prefix(i-1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC1: CREDIBILITY IS ${maxCredibility}")
                 }
 
                 for (i <- 1 until listOfIntervals.size)
                 {
-                    //println(s"GC1: NEXT INTERVAL ${listOfIntervals(i)}")
-
                     if (listOfIntervals(i)._1 < currentEnd)
                     {
-                        //println(s"GC1: THERE IS AN OVERLAP")
-
                         if (BigDecimal(prefix(listOfIntervals(i)._2) - prefix(listOfIntervals(i)._1 - 1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble >= maxCredibility)
                         {
-                            //println(s"GC1: CREDIBILITY IS GREATER THAN THE MAXIMUM SO FAR")
                             maxCredibility = BigDecimal(prefix(listOfIntervals(i)._2) - prefix(listOfIntervals(i)._1 - 1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                            //println(s"GC1: INTERVAL ${listOfIntervals(i)} IS ${(for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(prefix(i) - prefix(i-1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC1: CREDIBILITY IS ${maxCredibility}")
                             currentInterval = listOfIntervals(i)
                         }
 
                         currentEnd = listOfIntervals(i)._2
-                        //println(s"GC1: END OF OVERLAPPING REGION UPDATED: ${currentEnd}")
                     }
                     else
                     {
-                        //println(s"GC1: THERE IS NO OVERLAP")
-
                         overlap += currentInterval
-                        //println(s"GC1: MOST CREDIBLE INTERVAL OF THE PREVIOUS OVERLAPPING REGION IS ${currentInterval}, WITH CREDIBILITY ${maxCredibility}")
 
                         currentInterval = listOfIntervals(i)
-                        //println(s"GC1: STARTING A NEW OVERLAPPING REGION WITH ${currentInterval}")
 
                         currentEnd = listOfIntervals(i)._2
                         maxCredibility = BigDecimal(prefix(listOfIntervals(i)._2) - prefix(listOfIntervals(i)._1 - 1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                        //println(s"GC1: INTERVAL ${listOfIntervals(i)} IS ${(for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(prefix(i) - prefix(i-1)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC1: CREDIBILITY IS ${maxCredibility}")
                     }
                 }
 
                 overlap += currentInterval
-                //println(s"GC1: MOST CREDIBLE INTERVAL OF THE LAST OVERLAPPING REGION IS ${currentInterval}, WITH CREDIBILITY ${maxCredibility}")
 
                 formatGround(overlap.toList, prefix.length)
             }
         }
     }
 
+    /**
+      * Takes a list of probabilistic maximal intervals and filters out all but
+      * the credible ones.
+      *
+      * Credibility = the sum of the cubes of the instantaneous probabilities
+      *
+      * @param listOfIntervals the complete List of probabilistic maximal intervals
+      * @param probs Array containing the instantaneous probabilities
+      * @return an Array that contains 1's for timepoints that belong in credible
+      *         probabilistic maximal intervals and 0's everywhere else
+      */
     def getCredible2(listOfIntervals: List[(Int, Int)], probs: Array[Double], threshold: Double): Array[Int] =
     {
-        //println(s"GC2: LIST OF INTERVALS: ${listOfIntervals.mkString("[", ", ", "]")}")
-
         if (listOfIntervals.isEmpty)
         {
             Array.fill[Int](probs.length)(0)
@@ -192,7 +202,6 @@ object PIEC_MLN_test extends App
                     val sq_probs = for (i <- currentStart to currentEnd) yield BigDecimal(math.pow(probs(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
                     val sum_sq_probs = sq_probs.sum
                     maxCredibility = BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                    //println(s"GC2: FIRST INTERVAL, STARTING AT 0, ${listOfIntervals(0)} IS ${(for (i <- currentStart to currentEnd) yield BigDecimal(probs(i)+threshold).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC2: CREDIBILITY IS ${maxCredibility}")
                 }
                 else
                 {
@@ -201,53 +210,39 @@ object PIEC_MLN_test extends App
                     val sq_probs = for (i <- currentStart to currentEnd) yield BigDecimal(math.pow(probs(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
                     val sum_sq_probs = sq_probs.sum
                     maxCredibility = BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                    //println(s"GC2: FIRST INTERVAL ${listOfIntervals(0)} IS ${(for (i <- currentStart to currentEnd) yield BigDecimal(probs(i)+threshold).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC2: CREDIBILITY IS ${maxCredibility}")
                 }
 
                 for (i <- 1 until listOfIntervals.size)
                 {
-                    //println(s"GC2: NEXT INTERVAL ${listOfIntervals(i)}")
-
                     length = listOfIntervals(i)._2 - listOfIntervals(i)._1 + 1
 
                     if (listOfIntervals(i)._1 < currentEnd)
                     {
-                        //println(s"GC2: THERE IS AN OVERLAP")
-
                         val sq_probs = for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(math.pow(probs(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
                         val sum_sq_probs = sq_probs.sum
 
                         if (BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble >= maxCredibility)
                         {
-                            //println(s"GC2: CREDIBILITY IS GREATER THAN THE MAXIMUM SO FAR")
                             maxCredibility = BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                            //println(s"GC2: INTERVAL ${listOfIntervals(i)} IS ${(for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(probs(i)+threshold).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC2: CREDIBILITY IS ${maxCredibility}")
                             currentInterval = listOfIntervals(i)
                         }
 
                         currentEnd = listOfIntervals(i)._2
-                        //println(s"GC2: END OF OVERLAPPING REGION UPDATED: ${currentEnd}")
                     }
                     else
                     {
-                        //println(s"GC2: THERE IS NO OVERLAP")
-
                         overlap += currentInterval
-                        //println(s"GC2: MOST CREDIBLE INTERVAL OF THE PREVIOUS OVERLAPPING REGION IS ${currentInterval}, WITH CREDIBILITY ${maxCredibility}")
 
                         currentInterval = listOfIntervals(i)
-                        //println(s"GC2: STARTING A NEW OVERLAPPING REGION WITH ${currentInterval}")
 
                         currentEnd = listOfIntervals(i)._2
                         val sq_probs = for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(math.pow(probs(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
                         val sum_sq_probs = sq_probs.sum
                         maxCredibility = BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                        //println(s"GC2: INTERVAL ${listOfIntervals(i)} IS ${(for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(probs(i)+threshold).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble).mkString("[", ", ", "]")}\nGC2: CREDIBILITY IS ${maxCredibility}")
                     }
                 }
 
                 overlap += currentInterval
-                //println(s"GC2: MOST CREDIBLE INTERVAL OF THE LAST OVERLAPPING REGION IS ${currentInterval}, WITH CREDIBILITY ${maxCredibility}")
 
                 formatGround(overlap.toList, probs.length)
             }
