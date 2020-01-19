@@ -159,6 +159,25 @@ object PIEC_testy_test extends App
         }
     }
 
+    /**
+      * The PIEC algorithm. It originally appears in "Artikis A., Makris E. and Paliouras G.,
+      * A Probabilistic Interval-based Event Calculus for Activity Recognition.
+      * In Annals of Mathematics and Artificial Intelligence, 2019".
+      *
+      * Implementation in Scala by Christos Vlassopoulos.
+      *
+      * @param inputArray the array that contains all of the input instantaneous
+      *                   probabilities
+      * @param threshold the desired probability threshold
+      * @param fw FileWriter variable that writes down probabilistic maximal intervals
+      *           formatted in such a way, so that they can be visualized into ScalaTikz(*)
+      *           plots.
+      * @return credible probabilistic maximal intervals, formatted according to
+      *         the formatGround method.
+      *
+      * (*) ScalaTikz is an open-source library for PGF/TIKZ vector graphics, developed
+      *     by Evangelos Michelioudakis (https://github.com/vagmcs/ScalaTIKZ)
+      */
     def piec(inputArray: Array[Double], threshold: Double, fw: FileWriter) : Array[Int] =
     {
         val prefixInput = new Array[Double](inputArray.length)
@@ -172,13 +191,10 @@ object PIEC_testy_test extends App
         val prefix = new Array[Double](inputArray.length)
         val dp = new Array[Double](inputArray.length)
         var result = ListBuffer[(Int, Int)]()
-        var i = 0
 
-        while (i < inputArray.length)
+        for (x <- inputArray)
         {
-            val x = inputArray(i)
-            inputArray(i) = BigDecimal(x - threshold).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-            i = i + 1
+            inputArray(inputArray.indexOf(x)) = BigDecimal(x - threshold).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
         }
 
         prefix(0) = BigDecimal(inputArray(0)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
@@ -229,6 +245,10 @@ object PIEC_testy_test extends App
             }
         }
 
+        /**
+          * Export probabilistic maximal intervals into ScalaTikz format for plot
+          * making.
+          */
         val number_of_intervals = result.length
         fw.write(s"};\n\n\\addplot[solid, thin, color=orange, mark=none, mark size=1.0pt, mark options={draw=orange, fill=orange}] coordinates {\n")
         var height = 1.08
@@ -253,6 +273,10 @@ object PIEC_testy_test extends App
         }
         fw.write(s"};\n\n")
 
+        /**
+          * Distinguish the credible probabilistic maximal intervals, according
+          * to the credibility strategy.
+          */
         getCredible(result.toList, prefixInput)
     }
 

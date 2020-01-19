@@ -1,8 +1,8 @@
 package piec
 
-import java.io.{File, FileWriter, PrintWriter}
+import java.io.{File, FileWriter}
 
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.{ListBuffer}
 import scala.io.Source
 
 /**
@@ -14,7 +14,7 @@ import scala.io.Source
 object PIEC_LoMRF_test extends App
 {
     /**
-      * Takes as input a list of intervals of the form (start, end) and returns
+      * Takes as input a List of intervals of the form (start, end) and returns
       * an Array of 0's and 1's. The i-th element of the resulting Array is a 1
       * if i is contained in at least one interval in the input List,
       * otherwise it is a 0.
@@ -166,21 +166,21 @@ object PIEC_LoMRF_test extends App
       * Credibility = the sum of the cubes of the instantaneous probabilities
       *
       * @param listOfIntervals the complete List of probabilistic maximal intervals
-      * @param probs Array containing the instantaneous probabilities
+      * @param l Array containing the instantaneous probabilities reduced by the threshold
       * @return an Array that contains 1's for timepoints that belong in credible
       *         probabilistic maximal intervals and 0's everywhere else
       */
-    def getCredible2(listOfIntervals: List[(Int, Int)], probs: Array[Double], threshold: Double): Array[Int] =
+    def getCredible2(listOfIntervals: List[(Int, Int)], l: Array[Double], threshold: Double): Array[Int] =
     {
         if (listOfIntervals.isEmpty)
         {
-            Array.fill[Int](probs.length)(0)
+            Array.fill[Int](l.length)(0)
         }
         else
         {
             if (listOfIntervals.length == 1)
             {
-                formatGround(listOfIntervals, probs.length)
+                formatGround(listOfIntervals, l.length)
             }
             else
             {
@@ -198,17 +198,17 @@ object PIEC_LoMRF_test extends App
                 {
                     // Credibility should be equal to the prefix at the end
                     // TODO: Check for possibly better rounding options
-                    val sq_probs = for (i <- currentStart to currentEnd) yield BigDecimal(math.pow(probs(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                    val sum_sq_probs = sq_probs.sum
-                    maxCredibility = BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    val qb_probs = for (i <- currentStart to currentEnd) yield BigDecimal(math.pow(l(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    val sum_qb_probs = qb_probs.sum
+                    maxCredibility = BigDecimal(sum_qb_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
                 }
                 else
                 {
                     // Calculate credibility as a difference of prefixes
                     // TODO: Check for possibly better rounding options
-                    val sq_probs = for (i <- currentStart to currentEnd) yield BigDecimal(math.pow(probs(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                    val sum_sq_probs = sq_probs.sum
-                    maxCredibility = BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    val qb_probs = for (i <- currentStart to currentEnd) yield BigDecimal(math.pow(l(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                    val sum_qb_probs = qb_probs.sum
+                    maxCredibility = BigDecimal(sum_qb_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
                 }
 
                 for (i <- 1 until listOfIntervals.size)
@@ -217,12 +217,12 @@ object PIEC_LoMRF_test extends App
 
                     if (listOfIntervals(i)._1 < currentEnd)
                     {
-                        val sq_probs = for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(math.pow(probs(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                        val sum_sq_probs = sq_probs.sum
+                        val qb_probs = for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(math.pow(l(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                        val sum_qb_probs = qb_probs.sum
 
-                        if (BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble >= maxCredibility)
+                        if (BigDecimal(sum_qb_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble >= maxCredibility)
                         {
-                            maxCredibility = BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                            maxCredibility = BigDecimal(sum_qb_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
                             currentInterval = listOfIntervals(i)
                         }
 
@@ -235,19 +235,36 @@ object PIEC_LoMRF_test extends App
                         currentInterval = listOfIntervals(i)
 
                         currentEnd = listOfIntervals(i)._2
-                        val sq_probs = for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(math.pow(probs(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-                        val sum_sq_probs = sq_probs.sum
-                        maxCredibility = BigDecimal(sum_sq_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                        val qb_probs = for (i <- listOfIntervals(i)._1 to listOfIntervals(i)._2) yield BigDecimal(math.pow(l(i) + threshold, 3)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+                        val sum_qb_probs = qb_probs.sum
+                        maxCredibility = BigDecimal(sum_qb_probs).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
                     }
                 }
 
                 overlap += currentInterval
 
-                formatGround(overlap.toList, probs.length)
+                formatGround(overlap.toList, l.length)
             }
         }
     }
 
+    /**
+      * The PIEC algorithm. It originally appears in "Artikis A., Makris E. and Paliouras G.,
+      * A Probabilistic Interval-based Event Calculus for Activity Recognition.
+      * In Annals of Mathematics and Artificial Intelligence, 2019".
+      *
+      * Implementation in Scala by Christos Vlassopoulos.
+      *
+      * @param inputArray the array that contains all of the input instantaneous
+      *                   probabilities
+      * @param threshold the desired probability threshold
+      * @param cred_flag Boolean flag. Setting it to true causes the algorithm to
+      *                  use the alternative interval credibility strategy (method getCredible2).
+      *                  Otherwise, the default interval credibility strategy is
+      *                  used (i.e.: method getCredible1)
+      * @return credible probabilistic maximal intervals, formatted according to
+      *         the formatGround method.
+      */
     def piec(inputArray: Array[Double], threshold: Double, cred_flag: Boolean) : Array[Int] =
     {
         val prefixInput = new Array[Double](inputArray.length)
@@ -261,13 +278,10 @@ object PIEC_LoMRF_test extends App
         val prefix = new Array[Double](inputArray.length)
         val dp = new Array[Double](inputArray.length)
         var result = ListBuffer[(Int, Int)]()
-        var i = 0
 
-        while (i < inputArray.length)
+        for (x <- inputArray)
         {
-            val x = inputArray(i)
-            inputArray(i) = BigDecimal(x - threshold).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
-            i = i + 1
+            inputArray(inputArray.indexOf(x)) = BigDecimal(x - threshold).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
         }
 
         prefix(0) = BigDecimal(inputArray(0)).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
@@ -318,6 +332,10 @@ object PIEC_LoMRF_test extends App
             }
         }
 
+        /**
+          * Distinguish the credible probabilistic maximal intervals, according
+          * to the desired credibility strategy.
+          */
         if (!cred_flag)
             getCredible1(result.toList, prefixInput)
         else

@@ -235,6 +235,23 @@ object PIEC_test extends App
         }
     }
 
+    /**
+      * The PIEC algorithm. It originally appears in "Artikis A., Makris E. and Paliouras G.,
+      * A Probabilistic Interval-based Event Calculus for Activity Recognition.
+      * In Annals of Mathematics and Artificial Intelligence, 2019".
+      *
+      * Implementation in Scala by Christos Vlassopoulos.
+      *
+      * @param inputArray the array that contains all of the input instantaneous
+      *                   probabilities
+      * @param threshold the desired probability threshold
+      * @param cred_flag Boolean flag. Setting it to true causes the algorithm to
+      *                  use the alternative interval credibility strategy (method getCredible2).
+      *                  Otherwise, the default interval credibility strategy is
+      *                  used (i.e.: method getCredible1)
+      * @return credible probabilistic maximal intervals, formatted according to
+      *         the formatGround method.
+      */
     def piec(inputArray: Array[Double], threshold: Double, cred_flag: Boolean) : Array[Int] =
     {
         val prefixInput = new Array[Double](inputArray.length)
@@ -302,6 +319,10 @@ object PIEC_test extends App
             }
         }
 
+        /**
+          * Distinguish the credible probabilistic maximal intervals, according
+          * to the desired credibility strategy.
+          */
         if (!cred_flag)
             getCredible1(result.toList, prefixInput)
         else
