@@ -6,12 +6,14 @@ import scala.collection.mutable.{ListBuffer}
 import scala.io.Source
 
 /**
+  * The following code performs the comparison between PIEC and MLN-EC (OSLa)
+  *
   * @author Christos G. Vlassopoulos (cvlas@iit.demokritos.gr)
   *
   *         2019-01-07
   */
 
-object PIEC_MLN_test extends App
+object PIEC_OSLa_test extends App
 {
     /**
       * Takes as input a list of intervals of the form (start, end) and returns
@@ -351,6 +353,15 @@ object PIEC_MLN_test extends App
             getCredible2(result.toList, inputArray, threshold)
     }
 
+    /**
+      * Takes the output of PIEC and compares it to the ground truth.
+      * Counts True Positives, False Positives, True Negatives and False Negatives.
+      *
+      * @param g the ground truth
+      * @param p the output of PIEC
+      * @return a tuple containing the number of True Positives, False Positives,
+      *         True Negatives and False Negatives.
+      */
     def evaluateResults(g: Array[Int], p: Array[Int]): (Int, Int, Int, Int) =
     {
         var (tn, fp, fn, tp) = (0, 0, 0, 0)
@@ -363,27 +374,15 @@ object PIEC_MLN_test extends App
             {
                 for (i <- 0 until n)
                 {
-                    if (g(i) == 0 && p(i) == 0)
-                    {
-                        tn += 1
-                    }
-                    if (g(i) == 0 && p(i) == 1)
-                    {
-                        fp += 1
-                    }
-                    if (g(i) == 1 && p(i) == 0)
-                    {
-                        fn += 1
-                    }
-                    if (g(i) == 1 && p(i) == 1)
-                    {
-                        tp += 1
-                    }
+                    if (g(i) == 0 && p(i) == 0) tn += 1
+                    if (g(i) == 0 && p(i) == 1) fp += 1
+                    if (g(i) == 1 && p(i) == 0) fn += 1
+                    if (g(i) == 1 && p(i) == 1) tp += 1
                 }
             }
             else
             {
-                println(s"WARNING! g.length = p.length = ${n}!!!")
+                println(s"WARNING! g.length = p.length = $n!!!")
             }
         }
         else
@@ -394,12 +393,7 @@ object PIEC_MLN_test extends App
         (tn, fp, fn, tp)
     }
 
-    /*val testArr = Array[Double](1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 1.0, 1.0, 1.0, 0.6, 1.0, 0.6, 1.0, 0.6, 0.5, 1.0, 1.0, 0.5, 1.0, 1.0, 1.0, 0.5, 1.0, 0.65, 1.0, 0.6, 0.6, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 1.0, 1.0)
-
-    val resultingArray = mlnec_intervals(testArr, 0.7)
-    println(s"${resultingArray.mkString("[", ", ", "]")}")*/
-
-    val mlnHomePath = "/home/cgvlas/Demokritos/PIEC-paper/data MLN-EC/MLN-EC"
+    val mlnHomePath = "./eval/MLN-EC data"
     val oslaHomePath = s"$mlnHomePath/OSLa_results+figures"
 
     val oslaHome = new File(oslaHomePath)
@@ -409,10 +403,8 @@ object PIEC_MLN_test extends App
         println(s"% ------------------------------------------------------------------------------\n% LONG-TERM ACTIVITY: ${ltaHome.getName}\n% ------------------------------------------------------------------------------\n")
 
         val resultsHomePath = s"${ltaHome.getAbsolutePath}/results"
-        // val annotationHomePath = s"$resultsHomePath\\annotation"
 
         val resultsHome = new File(resultsHomePath)
-        // val annotationHome = new File(annotationHomePath)
 
         var compPrec = new File(s"${ltaHome.getAbsolutePath}/piec_mln_comparison_precision.csv")
         var compRec = new File(s"${ltaHome.getAbsolutePath}/piec_mln_comparison_recall.csv")
@@ -434,7 +426,7 @@ object PIEC_MLN_test extends App
 
         for (th <- 0.1 to 0.91 by 0.1)
         {
-            val thround = BigDecimal(th).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val thRound = BigDecimal(th).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
 
             var (microSumTP_mlnec, microSumFP_mlnec, microSumFN_mlnec, microSumTP_piec1, microSumFP_piec1, microSumFN_piec1, microSumTP_piec2, microSumFP_piec2, microSumFN_piec2) = (0, 0, 0, 0, 0, 0, 0, 0, 0)
             var (macroPrecSum_mlnec, macroRecSum_mlnec, macroF1Sum_mlnec, macroPrecSum_piec1, macroRecSum_piec1, macroF1Sum_piec1, macroPrecSum_piec2, macroRecSum_piec2, macroF1Sum_piec2) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
@@ -442,8 +434,6 @@ object PIEC_MLN_test extends App
 
             for (resultFile <- resultsHome.listFiles().filter(x => x.getName.endsWith(".cv")).sortWith(_.getName < _.getName))
             {
-                //println(s"Working on ${resultFile.getName} MLN-EC result file, threshold: $thround...")
-
                 val lastLine = Source.fromFile(resultFile).getLines().foldLeft(Option.empty[String]) { case (_, line) => Some(line) }
 
                 val lastPoint = lastLine match
@@ -466,26 +456,26 @@ object PIEC_MLN_test extends App
                     groundTruth(time) = annot
                 }
 
-                val mintervals = mlnec_intervals(probabilities, thround)
+                val mintervals = mlnec_intervals(probabilities, thRound)
                 val results_m = evaluateResults(groundTruth, mintervals)
                 var all_negatives_m = false
                 println(s"OSLa: (${results_m._2}, ${results_m._3}, ${results_m._4})")
 
-                val pintervals1 = piec(probabilities, thround, false)
+                val pintervals1 = piec(probabilities, thRound, false)
                 val results_p1 = evaluateResults(groundTruth, pintervals1)
                 var all_negatives_p1 = false
                 println(s"PIEC1:  (${results_p1._2}, ${results_p1._3}, ${results_p1._4})")
 
                 // Restoring probabilities...
-                probabilities = probabilities.map(x => x + thround)
+                probabilities = probabilities.map(x => x + thRound)
 
-                val pintervals2 = piec(probabilities, thround, true)
+                val pintervals2 = piec(probabilities, thRound, true)
                 val results_p2 = evaluateResults(groundTruth, pintervals2)
                 var all_negatives_p2 = false
                 println(s"PIEC (AC):  (${results_p2._2}, ${results_p2._3}, ${results_p2._4})\n")
 
                 // Restoring probabilities...
-                probabilities = probabilities.map(x => x + thround)
+                probabilities = probabilities.map(x => x + thRound)
 
                 var totalOut = new File(s"${resultFile.getAbsolutePath}.out")
                 if (!totalOut.exists()) totalOut.createNewFile()
@@ -500,7 +490,7 @@ object PIEC_MLN_test extends App
                         s"${if (pintervals1(i) == 0) 0 else BigDecimal(pintervals1(i) + 0.1).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble}," +
                         s"${if (pintervals2(i) == 0) 0 else BigDecimal(pintervals2(i) + 0.15).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble}," +
                         s"${if (groundTruth(i) == 0) 0 else BigDecimal(groundTruth(i) + 0.2).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble}," +
-                        s"${thround}\n")
+                        s"${thRound}\n")
                 }
 
                 fw.close()
@@ -598,9 +588,9 @@ object PIEC_MLN_test extends App
             println(s"MICRO-AVERAGE F1-SCORE FOR OSLa + PIEC     : ${microF1_piec1}")
             println(s"MICRO-AVERAGE F1-SCORE FOR OSLa + PIEC (AC): ${microF1_piec2}")
 
-            fw1.write(f"${thround}\t${microPrec_piec1}%1.7f\t${microPrec_piec2}%1.7f\t${microPrec_mlnec}%1.7f\t${macroPrecAvg_piec1}%1.7f\t${macroPrecAvg_piec2}%1.7f\t${macroPrecAvg_mlnec}%1.7f\n")
-            fw2.write(f"${thround}\t${microRec_piec1}%1.7f\t${microRec_piec2}%1.7f\t${microRec_mlnec}%1.7f\t${macroRecAvg_piec1}%1.7f\t${macroRecAvg_piec2}%1.7f\t${macroRecAvg_mlnec}%1.7f\n")
-            fw3.write(f"${thround}\t${microF1_piec1}%1.7f\t${microF1_piec2}%1.7f\t${microF1_mlnec}%1.7f\t${macroF1Avg_piec1}%1.7f\t${macroF1Avg_piec2}%1.7f\t${macroF1Avg_mlnec}%1.7f\n")
+            fw1.write(f"${thRound}\t${microPrec_piec1}%1.7f\t${microPrec_piec2}%1.7f\t${microPrec_mlnec}%1.7f\t${macroPrecAvg_piec1}%1.7f\t${macroPrecAvg_piec2}%1.7f\t${macroPrecAvg_mlnec}%1.7f\n")
+            fw2.write(f"${thRound}\t${microRec_piec1}%1.7f\t${microRec_piec2}%1.7f\t${microRec_mlnec}%1.7f\t${macroRecAvg_piec1}%1.7f\t${macroRecAvg_piec2}%1.7f\t${macroRecAvg_mlnec}%1.7f\n")
+            fw3.write(f"${thRound}\t${microF1_piec1}%1.7f\t${microF1_piec2}%1.7f\t${microF1_mlnec}%1.7f\t${macroF1Avg_piec1}%1.7f\t${macroF1Avg_piec2}%1.7f\t${macroF1Avg_mlnec}%1.7f\n")
 
             println("% ------------------------------------------------------------------------------\n")
         }

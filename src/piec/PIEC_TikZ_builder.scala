@@ -1,8 +1,8 @@
 package piec
 
-import java.io.{File, FileWriter, PrintWriter}
+import java.io.{File, FileWriter}
 
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.{ListBuffer}
 import scala.io.Source
 
 /**
@@ -11,7 +11,7 @@ import scala.io.Source
   *         2019-01-07
   */
 
-object PIEC_testy_test extends App
+object PIEC_TikZ_builder extends App
 {
     /**
       * Takes as input a list of intervals of the form (start, end) and returns
@@ -170,13 +170,10 @@ object PIEC_testy_test extends App
       *                   probabilities
       * @param threshold the desired probability threshold
       * @param fw FileWriter variable that writes down probabilistic maximal intervals
-      *           formatted in such a way, so that they can be visualized into ScalaTikz(*)
+      *           formatted in such a way, so that they can be visualized into LaTeX Tikz
       *           plots.
       * @return credible probabilistic maximal intervals, formatted according to
       *         the formatGround method.
-      *
-      * (*) ScalaTikz is an open-source library for PGF/TIKZ vector graphics, developed
-      *     by Evangelos Michelioudakis (https://github.com/vagmcs/ScalaTIKZ)
       */
     def piec(inputArray: Array[Double], threshold: Double, fw: FileWriter) : Array[Int] =
     {
@@ -280,6 +277,19 @@ object PIEC_testy_test extends App
         getCredible(result.toList, prefixInput)
     }
 
+    /**
+      * The PIEC algorithm. It originally appears in "Artikis A., Makris E. and Paliouras G.,
+      * A Probabilistic Interval-based Event Calculus for Activity Recognition.
+      * In Annals of Mathematics and Artificial Intelligence, 2019".
+      *
+      * Implementation in Scala by Christos Vlassopoulos.
+      *
+      * @param inputArray the array that contains all of the input instantaneous
+      *                   probabilities
+      * @param threshold the desired probability threshold
+      * @return credible probabilistic maximal intervals, formatted according to
+      *         the formatGround method.
+      */
     def piec(inputArray: Array[Double], threshold: Double) : Array[Int] =
     {
         val prefixInput = new Array[Double](inputArray.length)
@@ -350,6 +360,15 @@ object PIEC_testy_test extends App
         getCredible(result.toList, prefixInput)
     }
 
+    /**
+      * Takes the output of PIEC and compares it to the ground truth.
+      * Counts True Positives, False Positives, True Negatives and False Negatives.
+      *
+      * @param g the ground truth
+      * @param p the output of PIEC
+      * @return a tuple containing the number of True Positives, False Positives,
+      *         True Negatives and False Negatives.
+      */
     def evaluateResults(g: Array[Int], p: Array[Int]): (Int, Int, Int, Int) =
     {
         var (tn, fp, fn, tp) = (0, 0, 0, 0)
@@ -362,27 +381,15 @@ object PIEC_testy_test extends App
             {
                 for (i <- 0 until n)
                 {
-                    if (g(i) == 0 && p(i) == 0)
-                    {
-                        tn += 1
-                    }
-                    if (g(i) == 0 && p(i) == 1)
-                    {
-                        fp += 1
-                    }
-                    if (g(i) == 1 && p(i) == 0)
-                    {
-                        fn += 1
-                    }
-                    if (g(i) == 1 && p(i) == 1)
-                    {
-                        tp += 1
-                    }
+                    if (g(i) == 0 && p(i) == 0) tn += 1
+                    if (g(i) == 0 && p(i) == 1) fp += 1
+                    if (g(i) == 1 && p(i) == 0) fn += 1
+                    if (g(i) == 1 && p(i) == 1) tp += 1
                 }
             }
             else
             {
-                println(s"WARNING! g.length = p.length = ${n}!!!")
+                println(s"WARNING! g.length = p.length = $n!!!")
             }
         }
         else
@@ -393,13 +400,8 @@ object PIEC_testy_test extends App
         (tn, fp, fn, tp)
     }
 
-    /*val testArr = Array[Double](1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 1.0, 1.0, 1.0, 0.6, 1.0, 0.6, 1.0, 0.6, 0.5, 1.0, 1.0, 0.5, 1.0, 1.0, 1.0, 0.5, 1.0, 0.65, 1.0, 0.6, 0.6, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 1.0, 1.0)
-
-    val resultingArray = mlnec_intervals(testArr, 0.7)
-    println(s"${resultingArray.mkString("[", ", ", "]")}")*/
-
-    val mlnHomePath = "/home/cgvlas/Demokritos/PIEC-paper/data MLN-EC/MLN-EC"
-    val oslaHomePath = s"$mlnHomePath/DN_results+figures"
+    val mlnHomePath = "./eval/MLN-EC data"
+    val oslaHomePath = s"$mlnHomePath/OSLa_results+figures"
 
     val oslaHome = new File(oslaHomePath)
 
@@ -408,19 +410,15 @@ object PIEC_testy_test extends App
         println(s"% ------------------------------------------------------------------------------\n% LONG-TERM ACTIVITY: ${ltaHome.getName}\n% ------------------------------------------------------------------------------\n")
 
         val resultsHomePath = s"${ltaHome.getAbsolutePath}/results"
-        // val annotationHomePath = s"$resultsHomePath\\annotation"
 
         val resultsHome = new File(resultsHomePath)
-        // val annotationHome = new File(annotationHomePath)
 
         for (th <- 0.7 to 0.71 by 0.1)
         {
-            val thround = BigDecimal(th).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
+            val thRound = BigDecimal(th).setScale(6, BigDecimal.RoundingMode.HALF_UP).toDouble
 
             for (resultFile <- resultsHome.listFiles().filter(x => x.getName.endsWith(".csv")).sortWith(_.getName < _.getName))
             {
-                //println(s"Working on ${resultFile.getName} MLN-EC result file, threshold: $thround...")
-
                 val lastLine = Source.fromFile(resultFile).getLines().foldLeft(Option.empty[String])
                 {
                     case (_, line) => Some(line)
@@ -485,7 +483,7 @@ object PIEC_testy_test extends App
                 }
 
                 fw.write("};\n\n\\addplot[solid, thin, color=green!75!black, mark=none, mark size=1.0pt, mark options={draw=green!75!black, fill=green!75!black}] coordinates {\n")
-                val mintervals = mlnec_intervals(probabilities, thround)
+                val mintervals = mlnec_intervals(probabilities, thRound)
                 for (i <- mintervals.indices)
                 {
                     if (mintervals(i) != 0)
@@ -498,7 +496,7 @@ object PIEC_testy_test extends App
                     }
                 }
 
-                val pintervals = piec(probabilities, thround)
+                val pintervals = piec(probabilities, thRound)
                 fw.write("};\n\n\\addplot[solid, thin, color=red!75!black, mark=none, mark size=1.0pt, mark options={draw=red!75!black, fill=red!75!black}] coordinates {\n")
                 for (i <- pintervals.indices)
                 {

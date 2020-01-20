@@ -34,16 +34,19 @@ object StatsGatherer extends App
                 {
                     for (ms <- measures)
                     {
-                        val spr1 = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics/PROBEC/none/${hle_long}_none-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_long-$ms.data")
-                        val spr2 = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics/PROBEC/$na/${hle_long}_$na-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_long-$ms.data")
-                        val sp11 = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics/PIEC1/none/${hle_long}_none-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_long-$ms.data")
-                        val sp12 = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics/PIEC1/$na/${hle_long}_$na-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_long-$ms.data")
-                        val sp21 = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics/PIEC2/none/${hle_long}_none-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_long-$ms.data")
-                        val sp22 = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics/PIEC2/$na/${hle_long}_$na-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_long-$ms.data")
+                        /**
+                          * A group of files to read from
+                          */
+                        val spr1 = new File(s"./eval/statistics/PROBEC/none/${hle_long}_none-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_long-$ms.data")
+                        val spr2 = new File(s"./eval/statistics/PROBEC/$na/${hle_long}_$na-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_long-$ms.data")
+                        val sp11 = new File(s"./eval/statistics/PIEC1/none/${hle_long}_none-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_long-$ms.data")
+                        val sp12 = new File(s"./eval/statistics/PIEC1/$na/${hle_long}_$na-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_long-$ms.data")
+                        val sp21 = new File(s"./eval/statistics/PIEC2/none/${hle_long}_none-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_long-$ms.data")
+                        val sp22 = new File(s"./eval/statistics/PIEC2/$na/${hle_long}_$na-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_long-$ms.data")
 
                         if (sp12.exists() && sp22.exists() && spr2.exists())
                         {
-                            val snp1 = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics_new/PIEC1/${na.capitalize}/${hle_short}_$na-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_short-$ms.data")
+                            val snp1 = new File(s"./eval/statistics_new/PIEC1/${na.capitalize}/${hle_short}_$na-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_short-$ms.data")
                             if (!snp1.getParentFile.exists()) snp1.getParentFile.mkdirs()
                             if (!snp1.exists()) snp1.createNewFile()
 
@@ -51,7 +54,7 @@ object StatsGatherer extends App
 
                             fwp1.write(s"# grp\tPIEC1-Min_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\tPIEC1-Max_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\tPIEC1-Avg_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\n")
 
-                            val snp2 = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics_new/PIEC2/${na.capitalize}/${hle_short}_$na-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_short-$ms.data")
+                            val snp2 = new File(s"./eval/statistics_new/PIEC2/${na.capitalize}/${hle_short}_$na-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_short-$ms.data")
                             if (!snp2.getParentFile.exists()) snp2.getParentFile.mkdirs()
                             if (!snp2.exists()) snp2.createNewFile()
 
@@ -59,7 +62,7 @@ object StatsGatherer extends App
 
                             fwp2.write(s"# grp\tPIEC2-Min_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\tPIEC2-Max_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\tPIEC2-Avg_${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}\n")
 
-                            val snpr = new File(s"/home/cgvlas/Demokritos/TPLP-toy/statistics_new/PROBEC/${na.capitalize}/${hle_short}_$na-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_short-$ms.data")
+                            val snpr = new File(s"./eval/statistics_new/PROBEC/${na.capitalize}/${hle_short}_$na-$dt-t${BigDecimal(th).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble}.$hle_short-$ms.data")
                             if (!snpr.getParentFile.exists()) snpr.getParentFile.mkdirs()
                             if (!snpr.exists()) snpr.createNewFile()
 
