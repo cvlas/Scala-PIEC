@@ -2,8 +2,8 @@
 #title           :piec.py
 #description     :PIEC(Probabilistic Interval-based Event calculus) computes probabilistic maximal intervals of a long-term activity(LTA).
 #author          :Evangelos Makris
-#date            :19/07/2018
-#version         :0.1
+#date            :25/08/2018
+#version         :0.2
 #usage           :./piec.py
 #===============================================================================================================================================
 
@@ -22,11 +22,16 @@ def getCredible(tuples,prefixInput):
 	overlap = list()
 	currentValue = tuples[0][1]
 	currentInterval = tuples[0]
-	max_cred = prefixInput[tuples[0][1]] - prefixInput[tuples[0][0]-1]	
+
+	
+	if currentInterval[0] == 0:
+		max_cred = prefixInput[tuples[0][1]]
+	else: 
+		max_cred = prefixInput[tuples[0][1]] - prefixInput[tuples[0][0]-1]	
 
 	for i in range(1, len(tuples)):
 		if (tuples[i][0] < currentValue):
-			if ((prefixInput[tuples[i][1]] - prefixInput[tuples[i][0]-1]) >= max_cred):
+			if ((prefixInput[tuples[i][1]] - prefixInput[tuples[i][0]-1]) > max_cred):
 				max_cred = prefixInput[tuples[i][1]] - prefixInput[tuples[i][0]-1]
 				currentInterval = tuples[i]			
 			currentValue = tuples[i][1]
@@ -48,7 +53,8 @@ def PIEC(threshold):
 	(''' PIEC(Probabilistic Interval-based Event calculus) computes probabilistic maximal intervals of a long-term activity(LTA) of interest with respect to an user-defined 	  probability threshold given a list of instantaneous probabilities ''')
 
 	#inputArray list initially contains the instantaneous probabilitites of the LTA.	
-	inputArray = [0.5, 0.3, 0.1, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.4, 0.5, 0.6, 0.7, 0.8 ,0.9, 0.9, 0.9, 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7, 0.0]
+	inputArray = [0.0,0.3,0.6,0.9,1.0,0.0,0.9,0.6,0.3,0.0]
+
 
 	#prefixInput contains the prefix sums of inputArray list. 
 	prefixInput = [None]*len(inputArray)
@@ -93,7 +99,7 @@ def PIEC(threshold):
 		if(round(dprange,6) >= 0):
 			if (end == len(inputArray) -1 and start<end):
 				result.append((start, end))
-			if (end == len(inputArray) -1 and start==end and inputArray[start]>0):
+			if (end == len(inputArray) -1 and start==end and inputArray[start]>=0):
 				result.append((start, end))
 		
 			flag1 = True
@@ -102,13 +108,14 @@ def PIEC(threshold):
 		else:
 			if (start < end and flag1):
 				result.append((start, end-1))
-			if (start == end and inputArray[start]>0):
+			if (start == end and inputArray[start]>=0):
 				result.append((start, end))
 
 			flag1 = False		
 			start += 1
-	#print(result)
+	#print(result) #uncomment to print all maximal intervals including the overlapping
 	print(getCredible(result,prefixInput))
+	
 	
 
 
