@@ -2,5 +2,4 @@
 *.iml
 *.xml
 *.swp
-/c/Users/chris/Dropbox/Demokritos/PIEC/alex-unit-tests.txt
-/c/Users/chris/Dropbox/Demokritos/PIEC/tests.txt
+*tests*
